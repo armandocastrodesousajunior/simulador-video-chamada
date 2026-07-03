@@ -49,6 +49,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Call Center not found" }, { status: 404 });
     }
 
+    if (callCenter.enforceUniqueExternalId && externalId) {
+      const existingCall = await prisma.call.findFirst({
+        where: { callCenterId, externalId },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      if (existingCall) {
+        if (callCenter.allowRetryIfNotCompleted) {
+          if (existingCall.status !== 'REJECTED' && existingCall.status !== 'EXPIRED') {
+            return NextResponse.json({ error: `Não foi possível criar uma videochamada, pois já foi criado uma videochamada com esse ID onde ela está com o status ${existingCall.status}` }, { status: 403 });
+          }
+        } else {
+          return NextResponse.json({ error: `Não foi possível criar uma videochamada, pois já foi criado uma videochamada com esse ID onde ela está com o status ${existingCall.status}` }, { status: 403 });
+        }
+      }
+    }
+
     const call = await prisma.call.create({
       data: {
         callCenterId,

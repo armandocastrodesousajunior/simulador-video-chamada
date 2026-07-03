@@ -139,7 +139,7 @@ export default function CentersPage() {
                   onChange={e => setAllowRetryIfNotCompleted(e.target.value === "RETRY_ALLOWED")}
                 >
                   <option value="BLOCK_ALL">Bloquear em todos os cenários (Nenhuma exceção)</option>
-                  <option value="RETRY_ALLOWED">Bloquear exceto se não concluiu (Permitir nova chamada se anterior foi abandonada/expirada)</option>
+                  <option value="RETRY_ALLOWED">Bloquear exceto se não concluiu (Permitir nova chamada se anterior foi rejeitada/expirada)</option>
                 </select>
               </div>
             )}

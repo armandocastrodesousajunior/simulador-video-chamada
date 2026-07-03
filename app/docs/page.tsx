@@ -154,6 +154,38 @@ const ROUTES = [
     ],
   },
   {
+    id: "get-calls-by-external-id",
+    method: "GET",
+    path: "/api/admin/calls/external/[id]",
+    auth: true,
+    title: "Consultar Chamadas por ID do Lead (External ID)",
+    description: "Retorna o histórico de todas as videochamadas geradas para um mesmo lead (external ID). Retorna um array ordenado da mais recente para a mais antiga.",
+    response: `[
+  {
+    "id": "uuid-da-chamada",
+    "token": "token-para-o-link",
+    "externalId": "id-do-lead-no-seu-crm",
+    "status": "REJECTED",
+    "watchTime": 0,
+    "watchPercentage": 0,
+    "createdAt": "2026-07-03T12:05:00.000Z"
+  },
+  {
+    "id": "uuid-da-chamada-antiga",
+    "token": "token-para-o-link",
+    "externalId": "id-do-lead-no-seu-crm",
+    "status": "ABANDONED",
+    "watchTime": 14,
+    "watchPercentage": 50,
+    "createdAt": "2026-07-03T12:00:00.000Z"
+  }
+]`,
+    notes: [
+      "Substitua [id] pelo ID do lead cadastrado no seu CRM (ex: /api/admin/calls/external/lead_123).",
+      "As chamadas mais recentes sempre aparecem primeiro (índice 0).",
+    ],
+  },
+  {
     id: "update-call",
     method: "PATCH",
     path: "/api/calls/[token]",
@@ -419,6 +451,7 @@ export default function DocsPage() {
     { id: "statuses", label: "Estados da Chamada" },
     { id: "api-reference", label: "API Reference" },
     { id: "webhooks", label: "Webhooks" },
+    { id: "mcp", label: "MCP Server" },
     { id: "payload", label: "Parâmetros de Retorno" },
   ];
 
@@ -693,6 +726,52 @@ export default function DocsPage() {
                   <li>Use <code style={{ color: "#4a80ff" }}>watchPercentage ≥ 80</code> como critério para identificar "leads quentes".</li>
                   <li>Falhas no webhook não afetam a experiência do lead — o sistema tenta uma vez e falha silenciosamente.</li>
                 </ul>
+              </div>
+            </section>
+          )}
+
+          {/* MCP */}
+          {activeSection === "mcp" && (
+            <section>
+              <h1 style={{ fontSize: "1.8rem", fontWeight: 700, color: "#fff", margin: "0 0 8px" }}>Servidor MCP (Model Context Protocol)</h1>
+              <p style={{ color: "#7b8fa3", fontSize: "0.9rem", lineHeight: 1.7, margin: "0 0 32px" }}>
+                O sistema roda um servidor MCP (Server-Sent Events) nativo para que você conecte Agentes de IA (ex: Claude Desktop) e permita que eles criem e acompanhem videochamadas de forma totalmente autônoma.
+              </p>
+
+              <div style={{
+                background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.2)",
+                borderRadius: 8, padding: "14px 18px", marginBottom: 28,
+              }}>
+                <h3 style={{ color: "#22c55e", fontSize: "1rem", margin: "0 0 8px" }}>🚀 Como Conectar</h3>
+                <p style={{ color: "#c9d1d9", fontSize: "0.85rem", margin: 0 }}>
+                  <strong>URL do Servidor:</strong> <code style={{ color: "#fff" }}>{baseUrl}/mcp</code>
+                </p>
+                <p style={{ color: "#c9d1d9", fontSize: "0.85rem", marginTop: 8 }}>
+                  No seu client MCP, adicione uma conexão do tipo <strong>SSE</strong> apontando para a URL acima.
+                </p>
+              </div>
+
+              <h2 style={{ color: "#fff", fontWeight: 600, fontSize: "1rem", marginBottom: 12 }}>Autenticação e Configurações</h2>
+              <p style={{ color: "#7b8fa3", fontSize: "0.9rem", marginBottom: 20 }}>
+                Acesse a aba <strong>Servidor MCP</strong> no Painel Admin para ligar/desligar o servidor e escolher se ele exige autenticação.
+                Se a autenticação estiver ativada (padrão), o cliente MCP deverá enviar:
+              </p>
+              <CodeBlock code="Authorization: Bearer [SEU_ADMIN_TOKEN]" lang="http" />
+
+              <h2 style={{ color: "#fff", fontWeight: 600, fontSize: "1rem", marginBottom: 12, marginTop: 32 }}>Ferramentas Expostas (Tools)</h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, padding: 16 }}>
+                  <code style={{ color: "#4a80ff", fontWeight: 600 }}>create_call</code>
+                  <p style={{ color: "#c9d1d9", fontSize: "0.85rem", margin: "8px 0 0" }}>Permite ao modelo criar um link de chamada para uma central específica. Respeita as regras de bloqueio do ID externo.</p>
+                </div>
+                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, padding: 16 }}>
+                  <code style={{ color: "#4a80ff", fontWeight: 600 }}>get_call</code>
+                  <p style={{ color: "#c9d1d9", fontSize: "0.85rem", margin: "8px 0 0" }}>Permite ao modelo consultar em tempo real se o cliente atendeu, assistiu, e a porcentagem assistida.</p>
+                </div>
+                <div style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, padding: 16 }}>
+                  <code style={{ color: "#4a80ff", fontWeight: 600 }}>list_external_calls</code>
+                  <p style={{ color: "#c9d1d9", fontSize: "0.85rem", margin: "8px 0 0" }}>Permite ao modelo puxar todo o histórico de um mesmo lead pesquisando pelo External ID.</p>
+                </div>
               </div>
             </section>
           )}

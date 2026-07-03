@@ -13,6 +13,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin/media" className="btn btn-secondary" style={{ justifyContent: 'flex-start' }}>Mídias</Link>
           <Link href="/admin/centers" className="btn btn-secondary" style={{ justifyContent: 'flex-start' }}>Centrais</Link>
           <Link href="/admin/calls" className="btn btn-secondary" style={{ justifyContent: 'flex-start' }}>Chamadas</Link>
+          <Link href="/admin/mcp" className="btn btn-secondary" style={{ justifyContent: 'flex-start' }}>Servidor MCP</Link>
           <Link href="/docs" className="btn btn-secondary" style={{ justifyContent: 'flex-start' }}>📄 API Docs</Link>
         </nav>
       </aside>

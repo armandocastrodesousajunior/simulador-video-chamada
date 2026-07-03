@@ -56,3 +56,13 @@ model CallEvent {
 
   call      Call     @relation(fields: [callId], references: [id])
 }
+
+model McpSettings {
+  id                  String   @id @default("singleton")
+  enabled             Boolean  @default(true)
+  requireAuth         Boolean  @default(true)
+  toolCreateCall      Boolean  @default(true)
+  toolGetCall         Boolean  @default(true)
+  toolListExternal    Boolean  @default(true)
+  updatedAt           DateTime @updatedAt
+}

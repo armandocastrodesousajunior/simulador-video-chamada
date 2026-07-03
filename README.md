@@ -87,4 +87,4 @@ Se você precisa consultar as informações da simulação antes, durante ou dep
 - Next.js 16.2.9 (App Router)
 - Prisma (SQLite)
 - Servidor dev padrão: `http://localhost:2376` (porta customizada no package.json).
-- O painel administrativo é acessado em `/admin` (protegido por Basic Auth/Middleware, dependendo da configuração no `proxy.ts`).
+- O painel administrativo é acessado em `/admin` (protegido por Basic Auth/Middleware, dependendo da configuração no `middleware.ts`).
