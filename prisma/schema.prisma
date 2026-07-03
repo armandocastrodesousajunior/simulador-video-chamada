@@ -1,0 +1,58 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Media {
+  id          String       @id @default(uuid())
+  name        String
+  type        String       // "LOCAL" ou "URL"
+  url         String
+  duration    Int?         // Duração em segundos (opcional)
+  createdAt   DateTime     @default(now())
+  CallCenters CallCenter[]
+}
+
+model CallCenter {
+  id                       String   @id @default(uuid())
+  name                     String
+  avatar                   String?
+  displayName              String
+  webhookUrl               String?
+  enforceUniqueExternalId  Boolean  @default(false)
+  allowRetryIfNotCompleted Boolean  @default(false)
+  createdAt                DateTime @default(now())
+  
+  mediaId                  String
+  media       Media    @relation(fields: [mediaId], references: [id])
+  Calls       Call[]
+}
+
+model Call {
+  id           String      @id @default(uuid())
+  token        String      @unique @default(uuid())
+  externalId   String?
+  status       String      @default("CREATED") // CREATED, ACCESSED, STARTED, COMPLETED, ABANDONED, EXPIRED
+  startedAt    DateTime?
+  endedAt      DateTime?
+  watchTime    Int         @default(0)
+  createdAt    DateTime    @default(now())
+
+  callCenterId String
+  callCenter   CallCenter  @relation(fields: [callCenterId], references: [id])
+  Events       CallEvent[]
+}
+
+model CallEvent {
+  id        String   @id @default(uuid())
+  callId    String
+  event     String   // call.created, call.accessed, call.started, call.completed, call.abandoned
+  payload   String?  // JSON stringificado com dados como IP, User Agent, etc.
+  createdAt DateTime @default(now())
+
+  call      Call     @relation(fields: [callId], references: [id])
+}

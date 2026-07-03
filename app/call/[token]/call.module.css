@@ -1,0 +1,722 @@
+/* ==========================================================
+   call.module.css — Tela de Videochamada Estilo Telegram
+   ========================================================== */
+
+/* ── ROOT CONTAINER ──────────────────────────────────────── */
+.root {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: 'Roboto', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--tg-text);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+/* ── ESTADO: LOADING ─────────────────────────────────────── */
+.loadingScreen {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.loadingIcon {
+  animation: tgLoadingPulse 2s ease-in-out infinite;
+}
+
+/* ── ESTADO: SESSÃO ENCERRADA / INVÁLIDA ────────────────── */
+.sessionClosedScreen {
+  position: fixed;
+  inset: 0;
+  background-color: #0b0e14; /* Azul super escuro */
+  display: flex;
+  flex-direction: column;
+  padding: 0 24px;
+  animation: tgFadeIn 0.4s ease forwards;
+}
+
+.sessionTopBar {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 24px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.sessionContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: -10vh;
+}
+
+.sessionIconWrapper {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 24px;
+}
+
+.sessionIconBg {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #4a80ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+}
+
+.sessionIconGlow {
+  position: absolute;
+  inset: -12px;
+  background: radial-gradient(circle, rgba(74, 128, 255, 0.4) 0%, transparent 70%);
+  z-index: 1;
+}
+
+.sessionTitle {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 8px 0;
+  text-align: center;
+}
+
+.sessionSub {
+  font-size: 0.9rem;
+  color: #7b8fa3;
+  margin: 0 0 40px 0;
+  text-align: center;
+}
+
+/* Card de Segurança */
+.securityCard {
+  width: 100%;
+  max-width: 340px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 60px;
+}
+
+.securityCardIcon {
+  flex-shrink: 0;
+}
+
+.securityCardTexts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.securityCardTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.securityCardDesc {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #7b8fa3;
+  line-height: 1.4;
+}
+
+/* Footer Lock Info */
+.sessionFooterInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.sessionSmallLock {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sessionFooterInfo p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #7b8fa3;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Bottom Bar */
+.sessionBottomBar {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px);
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto;
+}
+
+.btnPrimaryGradient {
+  width: 100%;
+  background: linear-gradient(90deg, #b062ff 0%, #4a80ff 100%);
+  color: #fff;
+  border: none;
+  border-radius: 28px;
+  padding: 16px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.btnPrimaryGradient:active {
+  opacity: 0.8;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ESTADO: INCOMING — Chamada Recebida
+   ══════════════════════════════════════════════════════════ */
+
+.incomingScreen {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    #0d1b2a 0%,
+    #1a3a5c 25%,
+    #0f2744 50%,
+    #163552 75%,
+    #1c4a6e 100%
+  );
+  background-size: 400% 400%;
+  animation: tgGradientShift 10s ease infinite;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 64px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 40px);
+  padding-left: 24px;
+  padding-right: 24px;
+}
+
+/* ── Top Bar ── */
+.topBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-bottom: 12px;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
+}
+
+.topBarBack {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.10);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+  border: none;
+  color: #fff;
+}
+
+.topBarBack:active {
+  background: rgba(255,255,255,0.22);
+}
+
+.topBarTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+  flex: 1;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+.topBarLock {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  opacity: 0.7;
+}
+
+/* ── Avatar Central ── */
+.incomingCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  justify-content: center;
+  animation: tgFadeIn 0.5s ease forwards;
+  gap: 0;
+}
+
+.avatarWrapper {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+/* Anéis de pulso estilo borda — clássico de chamada */
+.pulseRing {
+  position: absolute;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, 0.55);
+  background: transparent;
+  animation: ringExpand 2.6s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+@keyframes ringExpand {
+  0%   { width: 264px; height: 264px; opacity: 0.75; }
+  100% { width: 370px; height: 370px; opacity: 0;    }
+}
+
+.pulseRing:nth-child(1) { animation-delay: 0s;   }
+.pulseRing:nth-child(2) { animation-delay: 0.8s; }
+.pulseRing:nth-child(3) { animation-delay: 1.6s; }
+
+.avatarImg {
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid rgba(255, 255, 255, 0.30);
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(135deg, #1a3a5c, #2aabee44);
+  box-shadow: 0 0 0 7px rgba(255,255,255,0.08);
+}
+
+.avatarInitials {
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  border: 4px solid rgba(255, 255, 255, 0.30);
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(135deg, #1a3a5c, #1c4a6e);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4.8rem;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 0 0 7px rgba(255,255,255,0.08);
+}
+
+.callerName {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 8px 0;
+  text-align: center;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.35);
+}
+
+.callStatus {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.7);
+  margin: 0 0 10px 0;
+  text-align: center;
+  font-weight: 400;
+}
+
+/* Dots animados */
+.callDots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.55);
+  animation: dotBlink 1.4s ease-in-out infinite;
+}
+
+.dot:nth-child(1) { animation-delay: 0s;   }
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dotBlink {
+  0%, 80%, 100% { opacity: 0.25; transform: scale(0.85); }
+  40%            { opacity: 1;    transform: scale(1.1);  }
+}
+
+/* ── Wrapper de Ações + toque para atender ── */
+.incomingActionsWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  animation: tgButtonsSlideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+}
+
+/* ── Botões de Ação (Incoming) ── */
+.incomingActions {
+  display: flex;
+  justify-content: center;
+  gap: 96px;
+  width: 100%;
+}
+
+.tapToAnswer {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.45);
+  margin: 0;
+  letter-spacing: 0.03em;
+  font-weight: 400;
+}
+
+.actionBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+.actionBtnCircle {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease;
+}
+
+.actionBtnCircle:active {
+  transform: scale(0.91);
+}
+
+.actionBtnDecline {
+  background: var(--tg-red);
+  box-shadow: 0 0 24px rgba(229, 57, 53, 0.45);
+  animation: declinePulse 2.5s ease-in-out infinite;
+}
+
+@keyframes declinePulse {
+  0%,100% { box-shadow: 0 0 20px rgba(229,57,53,0.40); }
+  50%      { box-shadow: 0 0 34px rgba(229,57,53,0.70); }
+}
+
+.actionBtnAccept {
+  background: var(--tg-green);
+  box-shadow: 0 0 24px rgba(77, 202, 92, 0.45);
+  animation: acceptPulse 2.5s ease-in-out 0.5s infinite;
+}
+
+@keyframes acceptPulse {
+  0%,100% { box-shadow: 0 0 20px rgba(77,202,92,0.40); }
+  50%      { box-shadow: 0 0 34px rgba(77,202,92,0.70); }
+}
+
+.actionBtnLabel {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.65);
+  letter-spacing: 0.02em;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ESTADO: ACTIVE — Videochamada em Andamento
+   ══════════════════════════════════════════════════════════ */
+
+.activeScreen {
+  position: fixed;
+  inset: 0;
+  background: #000;
+}
+
+.activeVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* Vinheta superior */
+.topVignette {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 200px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* HUD Superior */
+.activeHud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-bottom: 12px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  animation: tgFadeIn 0.4s ease forwards;
+}
+
+.hudName {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.6);
+}
+
+.hudTimerRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hudTimer {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--tg-timer);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+.hudLock {
+  font-size: 0.7rem;
+  opacity: 0.55;
+}
+
+/* PIP Self-View */
+.selfViewPip {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 90px);
+  right: 14px;
+  width: 82px;
+  height: 110px;
+  border-radius: 13px;
+  background: #111;
+  border: 2px solid rgba(255,255,255,0.15);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+  animation: tgFadeIn 0.5s ease 0.3s both;
+  overflow: hidden;
+}
+
+/* Vinheta inferior */
+.bottomVignette {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 240px;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Barra de controles */
+.controlsBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 28px);
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-top: 16px;
+  display: flex;
+  justify-content: center;
+  animation: tgFadeSlideUp 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+}
+
+.controlsInner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 360px;
+}
+
+/* Botão de controle decorativo */
+.ctrlBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  cursor: default;
+  border: none;
+  background: none;
+  padding: 0;
+  flex: 1;
+}
+
+.ctrlBtnCircle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.14);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ctrlBtnLabel {
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: rgba(255,255,255,0.5);
+  text-align: center;
+  line-height: 1.2;
+  max-width: 56px;
+}
+
+/* Botão de encerrar chamada */
+.ctrlBtnEnd {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+  flex: 1;
+  transition: transform 0.15s ease;
+}
+
+.ctrlBtnEnd:active {
+  transform: scale(0.88);
+}
+
+.ctrlBtnEndCircle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--tg-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 28px rgba(229, 57, 53, 0.55);
+}
+
+.ctrlBtnEndLabel {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.75);
+  text-align: center;
+}
+
+/* ── Estado ativo (mudo/silenciado) */
+.ctrlBtnActive {
+  background: rgba(255, 255, 255, 0.28) !important;
+}
+
+/* ── Toast de Notificação ─────────────────────────────── */
+@keyframes toastSlideUp {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.toastWrapper {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 140px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 24px;
+  pointer-events: none;
+}
+
+.toastCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(20, 24, 34, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 14px 18px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  max-width: 320px;
+  width: 100%;
+  animation: toastSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.toastIcon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.toastMsg {
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.45;
+  font-weight: 400;
+}
