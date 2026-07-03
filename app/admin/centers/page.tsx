@@ -1,18 +1,22 @@
 "use client";
 import { useState, useEffect } from "react";
+import { Plus, Edit, Trash2, X, Network } from "lucide-react";
 
 export default function CentersPage() {
   const [centers, setCenters] = useState<any[]>([]);
   const [medias, setMedias] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   
+  // Modal states
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  
+  // Form states
   const [name, setName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [avatar, setAvatar] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [mediaId, setMediaId] = useState("");
-  
   const [enforceUniqueExternalId, setEnforceUniqueExternalId] = useState(false);
   const [allowRetryIfNotCompleted, setAllowRetryIfNotCompleted] = useState(false);
 
@@ -26,27 +30,32 @@ export default function CentersPage() {
 
   useEffect(() => { loadData(); }, []);
 
-  const handleEditClick = (center: any) => {
-    setEditingId(center.id);
-    setName(center.name);
-    setDisplayName(center.displayName);
-    setAvatar(center.avatar || "");
-    setWebhookUrl(center.webhookUrl || "");
-    setMediaId(center.mediaId);
-    setEnforceUniqueExternalId(center.enforceUniqueExternalId);
-    setAllowRetryIfNotCompleted(center.allowRetryIfNotCompleted);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const openModal = (center?: any) => {
+    if (center) {
+      setEditingId(center.id);
+      setName(center.name);
+      setDisplayName(center.displayName);
+      setAvatar(center.avatar || "");
+      setWebhookUrl(center.webhookUrl || "");
+      setMediaId(center.mediaId);
+      setEnforceUniqueExternalId(center.enforceUniqueExternalId);
+      setAllowRetryIfNotCompleted(center.allowRetryIfNotCompleted);
+    } else {
+      setEditingId(null);
+      setName("");
+      setDisplayName("");
+      setAvatar("");
+      setWebhookUrl("");
+      setMediaId("");
+      setEnforceUniqueExternalId(false);
+      setAllowRetryIfNotCompleted(false);
+    }
+    setIsModalOpen(true);
   };
 
-  const handleCancelEdit = () => {
+  const closeModal = () => {
+    setIsModalOpen(false);
     setEditingId(null);
-    setName("");
-    setDisplayName("");
-    setAvatar("");
-    setWebhookUrl("");
-    setMediaId("");
-    setEnforceUniqueExternalId(false);
-    setAllowRetryIfNotCompleted(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,131 +86,172 @@ export default function CentersPage() {
       });
     }
 
-    handleCancelEdit();
+    closeModal();
     loadData();
     setLoading(false);
   };
 
+  const handleDelete = async (id: string) => {
+    if (confirm("Tem certeza que deseja deletar esta central?")) {
+      const res = await fetch(`/api/admin/centers/${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+      } else {
+        loadData();
+      }
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <h1 style={{ fontSize: '2rem', fontWeight: 600 }}>Centrais de Chamada</h1>
       
-      <div className="glass-panel" style={{ padding: '2rem' }}>
-        <h2 style={{ marginBottom: '1.5rem' }}>{editingId ? "Editar Central" : "Criar Central"}</h2>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label>Nome Interno da Central</label>
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Central Vendas" required />
-            </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label>Nome Exibido ao Usuário</label>
-              <input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Ex: Ana Silva" required />
-            </div>
-          </div>
+      {/* Cabeçalho */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>Centrais</h1>
+          <p style={{ color: 'var(--text-secondary)' }}>Gerencie os atores/personas e suas regras de vídeo.</p>
+        </div>
+        
+        <button onClick={() => openModal()} className="btn btn-primary">
+          <Plus size={18} /> Nova Central
+        </button>
+      </div>
 
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label>URL do Avatar (Foto de perfil)</label>
-              <input type="url" value={avatar} onChange={e => setAvatar(e.target.value)} placeholder="https://..." />
-            </div>
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <label>URL do Webhook</label>
-              <input type="url" value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} placeholder="https://..." />
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <label>Mídia Vinculada</label>
-            <select value={mediaId} onChange={e => setMediaId(e.target.value)} required>
-              <option value="">Selecione uma mídia...</option>
-              {medias.map(m => (
-                <option key={m.id} value={m.id}>{m.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div style={{ background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
-              <input 
-                type="checkbox" 
-                checked={enforceUniqueExternalId} 
-                onChange={e => setEnforceUniqueExternalId(e.target.checked)} 
-              />
-              Gerar apenas UMA chamada por Identificador Único (externalId)
-            </label>
-
-            {enforceUniqueExternalId && (
-              <div style={{ marginLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label>Exceção da Regra (O que fazer com o bloqueio):</label>
-                <select 
-                  value={allowRetryIfNotCompleted ? "RETRY_ALLOWED" : "BLOCK_ALL"}
-                  onChange={e => setAllowRetryIfNotCompleted(e.target.value === "RETRY_ALLOWED")}
-                >
-                  <option value="BLOCK_ALL">Bloquear em todos os cenários (Nenhuma exceção)</option>
-                  <option value="RETRY_ALLOWED">Bloquear exceto se não concluiu (Permitir nova chamada se anterior foi rejeitada/expirada)</option>
-                </select>
+      {/* Grid de Centrais */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
+        {centers.map(c => (
+          <div key={c.id} className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div style={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: 'var(--bg-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                {c.avatar ? <img src={c.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Network size={24} color="var(--text-muted)" />}
               </div>
-            )}
-          </div>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 600, margin: '0 0 0.25rem 0' }}>{c.name}</h3>
+                <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>Exibição: {c.displayName}</p>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem', padding: '1rem 0', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Mídia:</span>
+                <span>{c.media?.name || "Nenhuma"}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Webhook:</span>
+                <span>{c.webhookUrl ? "Configurado" : "Não"}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Unicidade:</span>
+                <span style={{ color: c.enforceUniqueExternalId ? 'var(--success)' : 'var(--text-secondary)' }}>
+                  {c.enforceUniqueExternalId ? (c.allowRetryIfNotCompleted ? "Com Exceção" : "Bloqueio Total") : "Desativado"}
+                </span>
+              </div>
+            </div>
 
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button type="submit" className="btn btn-primary" disabled={loading || !mediaId}>
-              {loading ? "Salvando..." : editingId ? "Salvar Alterações" : "Criar Central"}
-            </button>
-            {editingId && (
-              <button type="button" onClick={handleCancelEdit} className="btn btn-secondary" disabled={loading}>
-                Cancelar Edição
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
+              <button onClick={() => openModal(c)} className="btn btn-secondary" style={{ flex: 1, padding: '0.5rem' }}>
+                <Edit size={16} /> Editar
               </button>
-            )}
+              <button onClick={() => handleDelete(c.id)} className="btn btn-danger" style={{ padding: '0.5rem 1rem' }}>
+                <Trash2 size={16} />
+              </button>
+            </div>
           </div>
-        </form>
+        ))}
+        {centers.length === 0 && (
+          <div style={{ gridColumn: '1 / -1', padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            Nenhuma central cadastrada.
+          </div>
+        )}
       </div>
 
-      <div className="glass-panel" style={{ padding: '2rem' }}>
-        <h2 style={{ marginBottom: '1.5rem' }}>Centrais Cadastradas</h2>
-        <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              <th style={{ padding: '1rem 0' }}>Nome</th>
-              <th style={{ padding: '1rem 0' }}>Exibição</th>
-              <th style={{ padding: '1rem 0' }}>Mídia</th>
-              <th style={{ padding: '1rem 0' }}>Webhook</th>
-              <th style={{ padding: '1rem 0' }}>Regra Unicidade</th>
-              <th style={{ padding: '1rem 0' }}>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {centers.map(c => (
-              <tr key={c.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '1rem 0' }}>{c.name}</td>
-                <td style={{ padding: '1rem 0' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    {c.avatar && <img src={c.avatar} alt="Avatar" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />}
-                    {c.displayName}
+      {/* Modal */}
+      {isModalOpen && (
+        <div style={{ 
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
+          backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)',
+          display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999,
+          padding: '1rem'
+        }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '700px', backgroundColor: 'var(--bg-surface-solid)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0, fontSize: '1.25rem' }}>{editingId ? "Editar Central" : "Criar Nova Central"}</h2>
+              <button onClick={closeModal} style={{ color: 'var(--text-secondary)' }}><X size={24} /></button>
+            </div>
+            
+            <div style={{ overflowY: 'auto', padding: '2rem' }}>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <label>Nome Interno</label>
+                    <input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Central Vendas" required />
                   </div>
-                </td>
-                <td style={{ padding: '1rem 0' }}>{c.media?.name}</td>
-                <td style={{ padding: '1rem 0' }}>{c.webhookUrl ? "Configurado" : "Não configurado"}</td>
-                <td style={{ padding: '1rem 0' }}>
-                  {c.enforceUniqueExternalId ? (
-                    <span style={{ color: 'var(--success)', fontSize: '0.875rem' }}>
-                      Ativada ({c.allowRetryIfNotCompleted ? "c/ Exceção" : "Total"})
-                    </span>
-                  ) : (
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Desativada</span>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <label>Nome Exibido</label>
+                    <input value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Ex: Ana Silva" required />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <label>Avatar (URL da foto)</label>
+                    <input type="url" value={avatar} onChange={e => setAvatar(e.target.value)} placeholder="https://..." />
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <label>Webhook URL (Opcional)</label>
+                    <input type="url" value={webhookUrl} onChange={e => setWebhookUrl(e.target.value)} placeholder="https://..." />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label>Mídia Vinculada</label>
+                  <select value={mediaId} onChange={e => setMediaId(e.target.value)} required style={{ backgroundColor: 'var(--bg-base)' }}>
+                    <option value="">Selecione uma mídia...</option>
+                    {medias.map(m => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: '1rem', borderRadius: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
+                    <input 
+                      type="checkbox" 
+                      checked={enforceUniqueExternalId} 
+                      onChange={e => setEnforceUniqueExternalId(e.target.checked)} 
+                      style={{ width: 18, height: 18, accentColor: 'var(--primary)' }}
+                    />
+                    Bloquear chamadas duplicadas por Lead (External ID)
+                  </label>
+
+                  {enforceUniqueExternalId && (
+                    <div style={{ marginLeft: '1.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <label style={{ color: 'var(--text-secondary)' }}>Exceção da Regra:</label>
+                      <select 
+                        value={allowRetryIfNotCompleted ? "RETRY_ALLOWED" : "BLOCK_ALL"}
+                        onChange={e => setAllowRetryIfNotCompleted(e.target.value === "RETRY_ALLOWED")}
+                        style={{ backgroundColor: 'var(--bg-base)' }}
+                      >
+                        <option value="BLOCK_ALL">Bloquear sempre (Nenhuma exceção)</option>
+                        <option value="RETRY_ALLOWED">Permitir nova chamada se a anterior foi rejeitada/expirada</option>
+                      </select>
+                    </div>
                   )}
-                </td>
-                <td style={{ padding: '1rem 0' }}>
-                  <button onClick={() => handleEditClick(c)} className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.875rem' }}>
-                    Editar
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+                  <button type="button" onClick={closeModal} className="btn btn-secondary">Cancelar</button>
+                  <button type="submit" className="btn btn-primary" disabled={loading || !mediaId}>
+                    {loading ? "Salvando..." : editingId ? "Salvar Alterações" : "Criar Central"}
                   </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
