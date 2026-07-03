@@ -3,10 +3,10 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const externalId = params.id;
+    const { id: externalId } = await params;
     
     if (!externalId) {
       return NextResponse.json({ error: "ID externo não fornecido" }, { status: 400 });

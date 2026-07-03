@@ -1,0 +1,42 @@
+# Dependências
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Git
+.git
+.gitignore
+
+# Arquivos de Build do Next.js
+.next
+out
+build
+*.tsbuildinfo
+next-env.d.ts
+
+# Arquivos de Banco de Dados / Prisma (para não enviar dados sensíveis ou locais)
+prisma/*.db
+prisma/*.db-journal
+prisma/dev.db
+/app/generated/prisma
+
+# Variáveis de Ambiente locais (Apenas o .env.example é seguro, mas o Docker vai gerenciar as variáveis na orquestração)
+.env
+.env.*
+!.env.example
+
+# Uploads Locais de Mídias (Os uploads serão montados via volume no Docker)
+public/uploads
+
+# Mac/OS
+.DS_Store
+*.pem
+
+# Ferramentas / Documentação Interna
+AGENTS.md
+CLAUDE.md
+README.md
+.gemini
+.vercel

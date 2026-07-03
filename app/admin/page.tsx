@@ -3,15 +3,18 @@ import DashboardCharts from "./DashboardCharts";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
-  const centers = await prisma.callCenter.count();
-  const totalCalls = await prisma.call.count();
-  
-  // Status counts
-  const statusGroups = await prisma.call.groupBy({
-    by: ['status'],
-    _count: { status: true }
-  });
+  try {
+    const centers = await prisma.callCenter.count();
+    const totalCalls = await prisma.call.count();
+    
+    // Status counts
+    const statusGroups = await prisma.call.groupBy({
+      by: ['status'],
+      _count: { status: true }
+    });
 
   const getStatusCount = (statusName: string) => {
     return statusGroups.find(g => g.status === statusName)?._count.status || 0;
@@ -156,4 +159,12 @@ export default async function DashboardPage() {
       </div>
     </div>
   );
+  } catch (error) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        <h2>Erro de conexão com o banco de dados</h2>
+        <p>Aguardando o banco de dados iniciar para carregar o Dashboard...</p>
+      </div>
+    );
+  }
 }
