@@ -24,6 +24,44 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Call Center not found" }, { status: 404 });
     }
 
+    if (callCenter.enforceUniqueExternalId && externalId) {
+      const existingCall = await prisma.call.findFirst({
+        where: { callCenterId, externalId },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      if (existingCall) {
+        const baseUrl = process.env.APP_URL;
+        let url = "";
+        if (baseUrl) {
+          url = `${baseUrl}/call/${existingCall.token}`;
+        } else {
+          const host = req.headers.get("host") || "localhost:2376";
+          const protocol = host.includes("localhost") ? "http" : "https";
+          url = `${protocol}://${host}/call/${existingCall.token}`;
+        }
+
+        if (existingCall.status === 'CREATED') {
+          return NextResponse.json({
+            message: "Uma chamada já estava pendente (CREATED) para este ID. Retornando a existente.",
+            callId: existingCall.id,
+            callToken: existingCall.token,
+            url: url
+          }, { status: 200 });
+        }
+
+        const errorMsg = `Não foi possível criar uma videochamada, pois já foi criado uma videochamada com esse ID onde ela está com o status ${existingCall.status}`;
+        
+        if (callCenter.allowRetryIfNotCompleted) {
+          if (existingCall.status !== 'REJECTED' && existingCall.status !== 'EXPIRED') {
+            return NextResponse.json({ error: errorMsg, callId: existingCall.id, url }, { status: 409 });
+          }
+        } else {
+          return NextResponse.json({ error: errorMsg, callId: existingCall.id, url }, { status: 409 });
+        }
+      }
+    }
+
     const call = await prisma.call.create({
       data: {
         callCenterId,

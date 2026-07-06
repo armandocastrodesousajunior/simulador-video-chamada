@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import DashboardCharts from "./DashboardCharts";
+import AllCallsModal from "./components/AllCallsModal";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -125,7 +126,10 @@ export default async function DashboardPage() {
 
       {/* Feed Recente */}
       <div className="glass-panel" style={{ padding: '2rem', marginTop: '2rem' }}>
-        <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>Atividade Recente</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h3 style={{ fontSize: '1.25rem', margin: 0 }}>Atividade Recente</h3>
+          <AllCallsModal />
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {recentCalls.map(call => (
             <div key={call.id} style={{ 

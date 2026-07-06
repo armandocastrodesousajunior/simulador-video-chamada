@@ -20,12 +20,12 @@ mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
   if (!settings || settings.toolCreateCall) {
     tools.push({
       name: "create_call",
-      description: "Cria uma nova videochamada (link simulado) para um lead em uma central específica.",
+      description: "Cria um novo link de videochamada para um usuário em uma central específica.",
       inputSchema: {
         type: "object",
         properties: {
           callCenterId: { type: "string", description: "ID da central de chamadas" },
-          externalId: { type: "string", description: "ID do lead no CRM (opcional, para evitar duplicatas)" }
+          externalId: { type: "string", description: "Um identificador opcional que você pode utilizar para identificar para quem é aquela chamada" }
         },
         required: ["callCenterId"]
       }
@@ -49,11 +49,11 @@ mcpServer.setRequestHandler(ListToolsRequestSchema, async () => {
   if (!settings || settings.toolListExternal) {
     tools.push({
       name: "list_external_calls",
-      description: "Lista todo o histórico de videochamadas geradas para um ID externo (lead) específico.",
+      description: "Lista todo o histórico de videochamadas geradas para um identificador (externalId) específico.",
       inputSchema: {
         type: "object",
         properties: {
-          externalId: { type: "string", description: "ID do lead no CRM" }
+          externalId: { type: "string", description: "O identificador único do usuário/cliente para buscar seu histórico de chamadas" }
         },
         required: ["externalId"]
       }
@@ -81,6 +81,16 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
       });
 
       if (existingCall) {
+        if (existingCall.status === 'CREATED') {
+          const baseUrl = process.env.APP_URL || "http://localhost:3000";
+          const callWithUrl = { 
+            ...existingCall, 
+            url: `${baseUrl}/call/${existingCall.token}`,
+            message: "Uma chamada já estava pendente (CREATED) para este ID. Retornando a existente." 
+          };
+          return { content: [{ type: "text", text: JSON.stringify(callWithUrl, null, 2) }] };
+        }
+
         if (callCenter.allowRetryIfNotCompleted) {
           if (existingCall.status !== 'REJECTED' && existingCall.status !== 'EXPIRED') {
             throw new Error(`Não foi possível criar uma videochamada, pois já foi criado uma videochamada com esse ID onde ela está com o status ${existingCall.status}`);
