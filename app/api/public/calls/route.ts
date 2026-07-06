@@ -35,13 +35,20 @@ export async function POST(req: NextRequest) {
     // Fire webhook async
     dispatchWebhook(call.id, "call.created");
 
-    const host = req.headers.get("host") || "localhost:2376";
-    const protocol = host.includes("localhost") ? "http" : "https";
+    const baseUrl = process.env.APP_URL;
+    let url = "";
+    if (baseUrl) {
+      url = `${baseUrl}/call/${call.token}`;
+    } else {
+      const host = req.headers.get("host") || "localhost:2376";
+      const protocol = host.includes("localhost") ? "http" : "https";
+      url = `${protocol}://${host}/call/${call.token}`;
+    }
     
     return NextResponse.json({
       callId: call.id,
       callToken: call.token,
-      url: `${protocol}://${host}/call/${call.token}`
+      url: url
     }, { status: 201 });
   } catch (error) {
     console.error("Error creating call:", error);

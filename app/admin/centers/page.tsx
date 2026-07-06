@@ -126,8 +126,18 @@ export default function CentersPage() {
               <div style={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: 'var(--bg-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                 {c.avatar ? <img src={c.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Network size={24} color="var(--text-muted)" />}
               </div>
-              <div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 600, margin: '0 0 0.25rem 0' }}>{c.name}</h3>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 600, margin: '0 0 0.25rem 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</h3>
+                  <button 
+                    onClick={() => { navigator.clipboard.writeText(c.id); alert('ID copiado: ' + c.id); }}
+                    className="btn btn-secondary" 
+                    style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+                    title="Copiar ID da Central"
+                  >
+                    Copiar ID
+                  </button>
+                </div>
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>Exibição: {c.displayName}</p>
               </div>
             </div>

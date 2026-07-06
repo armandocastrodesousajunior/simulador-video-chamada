@@ -10,25 +10,21 @@ services:
       POSTGRES_PASSWORD: secretpassword
       POSTGRES_DB: simulatecall_db
     ports:
-      - "5432:5432"
+      - "5429:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   app:
-    build: 
-      context: .
-      dockerfile: Dockerfile
+    image: armandocastro/simulatecall:latest
     container_name: simulatecall-app
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     depends_on:
       - db
     environment:
-      # Conecta o banco de dados interno do Docker
+      - SERVICE_URL_APP_3000
       - DATABASE_URL=postgresql://simulatecall:secretpassword@db:5432/simulatecall_db?schema=public
       - ADMIN_TOKEN=super_secret_token_2026
-      - APP_URL=http://localhost:3000
+      - APP_URL=$SERVICE_URL_APP
     volumes:
       # Garante que os arquivos locais da pasta uploads persistem mesmo se o container reiniciar
       - media_uploads:/app/public/uploads

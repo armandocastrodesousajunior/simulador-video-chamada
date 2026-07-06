@@ -103,7 +103,10 @@ mcpServer.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { dispatchWebhook } = await import("@/lib/webhook");
     dispatchWebhook(call.id, "call.created");
 
-    return { content: [{ type: "text", text: JSON.stringify(call, null, 2) }] };
+    const baseUrl = process.env.APP_URL || "http://localhost:3000";
+    const callWithUrl = { ...call, url: `${baseUrl}/call/${call.token}` };
+
+    return { content: [{ type: "text", text: JSON.stringify(callWithUrl, null, 2) }] };
   }
 
   if (request.params.name === "get_call" && (!settings || settings.toolGetCall)) {
