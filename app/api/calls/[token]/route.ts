@@ -31,6 +31,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
         name: call.callCenter.name,
         displayName: call.callCenter.displayName,
         avatar: call.callCenter.avatar,
+        requireEndCallConfirmation: call.callCenter.requireEndCallConfirmation,
         pixelId: call.callCenter.pixelId,
         pixelEvents: call.callCenter.pixelEvents,
       },

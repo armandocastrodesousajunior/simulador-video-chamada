@@ -19,6 +19,7 @@ export default function CentersPage() {
   const [mediaId, setMediaId] = useState("");
   const [enforceUniqueExternalId, setEnforceUniqueExternalId] = useState(false);
   const [allowRetryIfNotCompleted, setAllowRetryIfNotCompleted] = useState(false);
+  const [requireEndCallConfirmation, setRequireEndCallConfirmation] = useState(true);
   
   // Pixel states
   const [pixelId, setPixelId] = useState("");
@@ -51,6 +52,7 @@ export default function CentersPage() {
       setMediaId(center.mediaId);
       setEnforceUniqueExternalId(center.enforceUniqueExternalId);
       setAllowRetryIfNotCompleted(center.allowRetryIfNotCompleted);
+      setRequireEndCallConfirmation(center.requireEndCallConfirmation ?? true);
       setPixelId(center.pixelId || "");
       
       let events = {
@@ -72,6 +74,7 @@ export default function CentersPage() {
       setMediaId("");
       setEnforceUniqueExternalId(false);
       setAllowRetryIfNotCompleted(false);
+      setRequireEndCallConfirmation(true);
       setPixelId("");
       setPixelEvents({
         CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: ""
@@ -101,6 +104,7 @@ export default function CentersPage() {
       mediaId,
       enforceUniqueExternalId,
       allowRetryIfNotCompleted,
+      requireEndCallConfirmation,
       pixelId,
       pixelEvents: JSON.stringify(pixelEvents)
     };
@@ -287,6 +291,18 @@ export default function CentersPage() {
                       </select>
                     </div>
                   )}
+                  
+                  <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: '0.5rem 0' }} />
+                  
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
+                    <input 
+                      type="checkbox" 
+                      checked={requireEndCallConfirmation} 
+                      onChange={e => setRequireEndCallConfirmation(e.target.checked)} 
+                      style={{ width: 18, height: 18, accentColor: 'var(--primary)' }}
+                    />
+                    Requerer confirmação ao desligar (Modal de 3s)
+                  </label>
                 </div>
 
                 {/* Seção Meta Pixel */}

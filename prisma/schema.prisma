@@ -25,6 +25,7 @@ model CallCenter {
   webhookUrl               String?
   enforceUniqueExternalId  Boolean  @default(false)
   allowRetryIfNotCompleted Boolean  @default(false)
+  requireEndCallConfirmation Boolean @default(true)
   createdAt                DateTime @default(now())
   
   pixelId                  String?

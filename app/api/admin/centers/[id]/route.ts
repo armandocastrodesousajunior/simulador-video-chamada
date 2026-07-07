@@ -5,7 +5,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const body = await req.json();
-    const { name, displayName, avatar, webhookUrl, mediaId, enforceUniqueExternalId, allowRetryIfNotCompleted, pixelId, pixelEvents } = body;
+    const { name, displayName, avatar, webhookUrl, mediaId, enforceUniqueExternalId, allowRetryIfNotCompleted, pixelId, pixelEvents, requireEndCallConfirmation } = body;
 
     const center = await prisma.callCenter.update({
       where: { id },
@@ -17,6 +17,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         mediaId,
         enforceUniqueExternalId: enforceUniqueExternalId || false,
         allowRetryIfNotCompleted: allowRetryIfNotCompleted || false,
+        requireEndCallConfirmation: requireEndCallConfirmation !== undefined ? requireEndCallConfirmation : true,
         pixelId: pixelId || null,
         pixelEvents: pixelEvents || null
       }

@@ -149,6 +149,8 @@ export default function CallPage() {
   const [speakerMuted, setSpeakerMuted] = useState(false);
   const [micMuted, setMicMuted] = useState(false);
   const [toast, setToast] = useState<{ msg: string; icon: string } | null>(null);
+  const [showEndModal, setShowEndModal] = useState(false);
+  const [endModalTimer, setEndModalTimer] = useState(3);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = (msg: string, icon: string) => {
@@ -196,7 +198,7 @@ export default function CallPage() {
           if (typeof navigator !== "undefined" && navigator.vibrate) {
             navigator.vibrate([600, 200, 600, 200, 600]);
           }
-        } else if (data.status === "ACCESSED") {
+        } else if (data.status === "ACCESSED" || data.status === "STARTED") {
           setStatus("INCOMING");
         } else {
           setStatus("CLOSED");
@@ -204,17 +206,7 @@ export default function CallPage() {
       });
   }, [token]);
 
-  // ── Listener beforeunload ──────────────────────────────
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (callActive) {
-        const dur = videoRef.current?.duration;
-        updateCallStatus("ABANDONED", calculateWatchTime(), dur ? Math.round(dur) : undefined);
-      }
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [callActive]);
+  // Listener removido a pedido do usuário (para permitir reacesso sem abandonar)
 
   // ── Timer crescente (ACTIVE) ───────────────────────────
   useEffect(() => {
@@ -294,13 +286,34 @@ export default function CallPage() {
     updateCallStatus("COMPLETED", calculateWatchTime(), dur ? Math.round(dur) : undefined);
   }, []);
 
+  // ── Timer Modal Confirmação ──────────────────────────
+  useEffect(() => {
+    let interval: any;
+    if (showEndModal && endModalTimer > 0) {
+      interval = setInterval(() => {
+        setEndModalTimer(t => t - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [showEndModal, endModalTimer]);
+
   const handleEndCall = useCallback(() => {
     setCallActive(false);
+    setShowEndModal(false);
     setStatus("CLOSED");
     if (videoRef.current) videoRef.current.pause();
     const dur = videoRef.current?.duration;
     updateCallStatus("ABANDONED", calculateWatchTime(), dur ? Math.round(dur) : undefined);
   }, []);
+
+  const handleEndCallClick = useCallback(() => {
+    if (callData?.callCenter?.requireEndCallConfirmation) {
+      setEndModalTimer(3);
+      setShowEndModal(true);
+    } else {
+      handleEndCall();
+    }
+  }, [callData, handleEndCall]);
 
   const handleToggleSpeaker = useCallback(() => {
     setSpeakerMuted(prev => {
@@ -570,7 +583,7 @@ export default function CallPage() {
           {/* Encerrar (funcional) */}
           <button
             className={styles.ctrlBtnEnd}
-            onClick={handleEndCall}
+            onClick={handleEndCallClick}
             aria-label="Encerrar chamada"
           >
             <div className={styles.ctrlBtnEndCircle}>
@@ -597,6 +610,45 @@ export default function CallPage() {
 
         </div>
       </div>
+
+      {/* Modal de Confirmação de Desligamento */}
+      {showEndModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+          backgroundColor: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)',
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          zIndex: 99999, padding: '1.5rem'
+        }}>
+          <div style={{
+            backgroundColor: 'rgba(25,25,30,0.9)', border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '16px', padding: '2rem', width: '100%', maxWidth: '400px',
+            display: 'flex', flexDirection: 'column', gap: '1.5rem',
+            textAlign: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+          }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0, color: '#fff' }}>
+              Encerrar chamada?
+            </h3>
+            <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0, fontSize: '0.95rem', lineHeight: 1.5 }}>
+              Você tem certeza que deseja finalizar essa videochamada?
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+              <button 
+                onClick={() => setShowEndModal(false)}
+                style={{ flex: 1, padding: '0.875rem', borderRadius: '12px', border: 'none', backgroundColor: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.95rem', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleEndCall}
+                disabled={endModalTimer > 0}
+                style={{ flex: 1, padding: '0.875rem', borderRadius: '12px', border: 'none', backgroundColor: endModalTimer > 0 ? 'rgba(220, 53, 69, 0.4)' : '#dc3545', color: '#fff', fontSize: '0.95rem', fontWeight: 600, cursor: endModalTimer > 0 ? 'not-allowed' : 'transition' }}
+              >
+                {endModalTimer > 0 ? `Finalizar (${endModalTimer}s)` : "Finalizar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
