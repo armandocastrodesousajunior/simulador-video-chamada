@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, displayName, avatar, webhookUrl, mediaId, enforceUniqueExternalId, allowRetryIfNotCompleted } = body;
+    const { name, displayName, avatar, webhookUrl, mediaId, enforceUniqueExternalId, allowRetryIfNotCompleted, pixelId, pixelEvents } = body;
 
     if (!name || !displayName || !mediaId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -30,7 +30,9 @@ export async function POST(req: NextRequest) {
         webhookUrl: webhookUrl || null,
         mediaId,
         enforceUniqueExternalId: enforceUniqueExternalId || false,
-        allowRetryIfNotCompleted: allowRetryIfNotCompleted || false
+        allowRetryIfNotCompleted: allowRetryIfNotCompleted || false,
+        pixelId: pixelId || null,
+        pixelEvents: pixelEvents || null
       }
     });
     return NextResponse.json(center, { status: 201 });

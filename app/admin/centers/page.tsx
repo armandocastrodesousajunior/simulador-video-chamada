@@ -19,6 +19,17 @@ export default function CentersPage() {
   const [mediaId, setMediaId] = useState("");
   const [enforceUniqueExternalId, setEnforceUniqueExternalId] = useState(false);
   const [allowRetryIfNotCompleted, setAllowRetryIfNotCompleted] = useState(false);
+  
+  // Pixel states
+  const [pixelId, setPixelId] = useState("");
+  const [pixelEvents, setPixelEvents] = useState<Record<string, string>>({
+    CREATED: "",
+    ACCESSED: "",
+    STARTED: "",
+    COMPLETED: "",
+    REJECTED: "",
+    ABANDONED: ""
+  });
 
   const loadData = async () => {
     const resCenters = await fetch("/api/admin/centers");
@@ -40,6 +51,18 @@ export default function CentersPage() {
       setMediaId(center.mediaId);
       setEnforceUniqueExternalId(center.enforceUniqueExternalId);
       setAllowRetryIfNotCompleted(center.allowRetryIfNotCompleted);
+      setPixelId(center.pixelId || "");
+      
+      let events = {
+        CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: ""
+      };
+      if (center.pixelEvents) {
+        try {
+          const parsed = JSON.parse(center.pixelEvents);
+          events = { ...events, ...parsed };
+        } catch (e) {}
+      }
+      setPixelEvents(events);
     } else {
       setEditingId(null);
       setName("");
@@ -49,6 +72,10 @@ export default function CentersPage() {
       setMediaId("");
       setEnforceUniqueExternalId(false);
       setAllowRetryIfNotCompleted(false);
+      setPixelId("");
+      setPixelEvents({
+        CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: ""
+      });
     }
     setIsModalOpen(true);
   };
@@ -56,6 +83,10 @@ export default function CentersPage() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingId(null);
+  };
+
+  const handlePixelEventChange = (status: string, value: string) => {
+    setPixelEvents(prev => ({ ...prev, [status]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,7 +100,9 @@ export default function CentersPage() {
       webhookUrl, 
       mediaId,
       enforceUniqueExternalId,
-      allowRetryIfNotCompleted
+      allowRetryIfNotCompleted,
+      pixelId,
+      pixelEvents: JSON.stringify(pixelEvents)
     };
 
     if (editingId) {
@@ -109,7 +142,7 @@ export default function CentersPage() {
       {/* Cabeçalho */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 700, marginBottom: '0.5rem' }}>Centrais</h1>
+          <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: '0 0 0.5rem 0' }}>Centrais</h1>
           <p style={{ color: 'var(--text-secondary)' }}>Gerencie os atores/personas e suas regras de vídeo.</p>
         </div>
         
@@ -150,6 +183,12 @@ export default function CentersPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Webhook:</span>
                 <span>{c.webhookUrl ? "Configurado" : "Não"}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Pixel da Meta:</span>
+                <span style={{ color: c.pixelId ? 'var(--primary)' : 'var(--text-secondary)' }}>
+                  {c.pixelId ? "Ativo" : "Desativado"}
+                </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Unicidade:</span>
@@ -246,6 +285,52 @@ export default function CentersPage() {
                         <option value="BLOCK_ALL">Bloquear sempre (Nenhuma exceção)</option>
                         <option value="RETRY_ALLOWED">Permitir nova chamada se a anterior foi rejeitada/expirada</option>
                       </select>
+                    </div>
+                  )}
+                </div>
+
+                {/* Seção Meta Pixel */}
+                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--primary)', padding: '1.5rem', borderRadius: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--primary)' }}>Integração Meta Pixel (Opcional)</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <label>Pixel ID</label>
+                    <input 
+                      value={pixelId} 
+                      onChange={e => setPixelId(e.target.value)} 
+                      placeholder="Ex: 123456789012345" 
+                      style={{ borderColor: 'var(--primary)' }}
+                    />
+                  </div>
+
+                  {pixelId && (
+                    <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>
+                        Configure abaixo os eventos do Facebook que devem ser disparados em cada status da chamada (deixe em branco se não quiser rastrear aquele status). 
+                        Ex: <b>ViewContent, InitiateCheckout, Purchase</b>.
+                      </p>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <label style={{ fontSize: '0.8rem' }}>Acessada (ACCESSED)</label>
+                          <input value={pixelEvents.ACCESSED} onChange={e => handlePixelEventChange('ACCESSED', e.target.value)} placeholder="Ex: ViewContent" />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <label style={{ fontSize: '0.8rem' }}>Iniciada (STARTED)</label>
+                          <input value={pixelEvents.STARTED} onChange={e => handlePixelEventChange('STARTED', e.target.value)} placeholder="Ex: InitiateCheckout" />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <label style={{ fontSize: '0.8rem' }}>Completada (COMPLETED)</label>
+                          <input value={pixelEvents.COMPLETED} onChange={e => handlePixelEventChange('COMPLETED', e.target.value)} placeholder="Ex: Purchase" />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <label style={{ fontSize: '0.8rem' }}>Abandonada (ABANDONED)</label>
+                          <input value={pixelEvents.ABANDONED} onChange={e => handlePixelEventChange('ABANDONED', e.target.value)} placeholder="Deixar vazio..." />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <label style={{ fontSize: '0.8rem' }}>Rejeitada (REJECTED)</label>
+                          <input value={pixelEvents.REJECTED} onChange={e => handlePixelEventChange('REJECTED', e.target.value)} placeholder="Deixar vazio..." />
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

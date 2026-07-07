@@ -27,6 +27,9 @@ model CallCenter {
   allowRetryIfNotCompleted Boolean  @default(false)
   createdAt                DateTime @default(now())
   
+  pixelId                  String?
+  pixelEvents              String?  // JSON string storing status mapping
+  
   mediaId                  String
   media       Media    @relation(fields: [mediaId], references: [id])
   Calls       Call[]

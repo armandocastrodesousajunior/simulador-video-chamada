@@ -31,6 +31,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
         name: call.callCenter.name,
         displayName: call.callCenter.displayName,
         avatar: call.callCenter.avatar,
+        pixelId: call.callCenter.pixelId,
+        pixelEvents: call.callCenter.pixelEvents,
       },
       media: {
         url: call.callCenter.media.url,

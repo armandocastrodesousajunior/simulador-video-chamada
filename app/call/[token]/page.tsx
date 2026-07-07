@@ -171,9 +171,27 @@ export default function CallPage() {
           return;
         }
         setCallData(data);
+        
+        // Inicializa o Pixel imediatamente se existir na central
+        if (data.callCenter?.pixelId) {
+          const pixelId = data.callCenter.pixelId;
+          const w = window as any;
+          if (!w.fbq) {
+            (function(f: any,b: any,e: any,v: any,n?: any,t?: any,s?: any)
+            {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+            n.queue=[];t=b.createElement(e);t.async=!0;
+            t.src=v;s=b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t,s)})(window, document,'script',
+            'https://connect.facebook.net/en_US/fbevents.js');
+            w.fbq('init', pixelId);
+          }
+        }
+
         if (data.status === "CREATED") {
           setStatus("INCOMING");
-          updateCallStatus("ACCESSED");
+          updateCallStatus("ACCESSED", undefined, undefined, data);
           // Vibração háptica (Android Chrome)
           if (typeof navigator !== "undefined" && navigator.vibrate) {
             navigator.vibrate([600, 200, 600, 200, 600]);
@@ -216,7 +234,32 @@ export default function CallPage() {
   }, [callActive]);
 
   // ── Helpers ────────────────────────────────────────────
-  const updateCallStatus = async (newStatus: string, watchTime?: number, mediaDuration?: number) => {
+  const updateCallStatus = async (newStatus: string, watchTime?: number, mediaDuration?: number, freshData?: any) => {
+    const currentData = freshData || callData;
+    
+    // 1. Dispara evento do Pixel se estiver configurado
+    if (currentData?.callCenter?.pixelId && currentData?.callCenter?.pixelEvents) {
+      try {
+        const eventsMap = JSON.parse(currentData.callCenter.pixelEvents);
+        const mappedEvent = eventsMap[newStatus];
+        if (mappedEvent && mappedEvent.trim() !== "") {
+          const w = window as any;
+          if (w.fbq) {
+            const standardEvents = ["AddPaymentInfo", "AddToCart", "AddToWishlist", "CompleteRegistration", "Contact", "CustomizeProduct", "Donate", "FindLocation", "InitiateCheckout", "Lead", "Purchase", "Schedule", "Search", "StartTrial", "SubmitApplication", "Subscribe", "ViewContent"];
+            if (standardEvents.includes(mappedEvent.trim())) {
+              w.fbq('track', mappedEvent.trim());
+            } else {
+              w.fbq('trackCustom', mappedEvent.trim());
+            }
+            console.log(`[Meta Pixel] Evento disparado para status ${newStatus}: ${mappedEvent.trim()}`);
+          }
+        }
+      } catch (e) {
+        console.error("Erro ao processar eventos do Pixel", e);
+      }
+    }
+
+    // 2. Atualiza o backend
     await fetch(`/api/calls/${token}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

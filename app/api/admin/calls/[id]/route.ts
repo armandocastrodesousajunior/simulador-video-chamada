@@ -18,7 +18,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       return NextResponse.json({ error: "Call not found" }, { status: 404 });
     }
 
-    // Delete the call (which will also cascade delete Events if they exist)
+    // Delete CallEvents first to avoid foreign key constraint violation
+    await prisma.callEvent.deleteMany({
+      where: { callId }
+    });
+
+    // Delete the call
     await prisma.call.delete({
       where: { id: callId }
     });
