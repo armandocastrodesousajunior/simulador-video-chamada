@@ -31,6 +31,12 @@ model CallCenter {
   pixelId                  String?
   pixelEvents              String?  // JSON string storing status mapping
   
+  tikTokPixelId            String?
+  tikTokEvents             String?  // JSON string
+  
+  googlePixelId            String?
+  googleEvents             String?  // JSON string
+  
   mediaId                  String
   media       Media    @relation(fields: [mediaId], references: [id])
   Calls       Call[]

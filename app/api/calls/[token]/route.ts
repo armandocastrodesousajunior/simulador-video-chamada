@@ -34,6 +34,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
         requireEndCallConfirmation: call.callCenter.requireEndCallConfirmation,
         pixelId: call.callCenter.pixelId,
         pixelEvents: call.callCenter.pixelEvents,
+        tikTokPixelId: call.callCenter.tikTokPixelId,
+        tikTokEvents: call.callCenter.tikTokEvents,
+        googlePixelId: call.callCenter.googlePixelId,
+        googleEvents: call.callCenter.googleEvents,
       },
       media: {
         url: call.callCenter.media.url,

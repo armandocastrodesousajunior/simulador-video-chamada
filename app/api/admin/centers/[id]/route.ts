@@ -5,7 +5,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const body = await req.json();
-    const { name, displayName, avatar, webhookUrl, mediaId, enforceUniqueExternalId, allowRetryIfNotCompleted, pixelId, pixelEvents, requireEndCallConfirmation } = body;
+    const { name, displayName, avatar, webhookUrl, mediaId, enforceUniqueExternalId, allowRetryIfNotCompleted, pixelId, pixelEvents, requireEndCallConfirmation, tikTokPixelId, tikTokEvents, googlePixelId, googleEvents } = body;
 
     const center = await prisma.callCenter.update({
       where: { id },
@@ -19,7 +19,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         allowRetryIfNotCompleted: allowRetryIfNotCompleted || false,
         requireEndCallConfirmation: requireEndCallConfirmation !== undefined ? requireEndCallConfirmation : true,
         pixelId: pixelId || null,
-        pixelEvents: pixelEvents || null
+        pixelEvents: pixelEvents || null,
+        tikTokPixelId: tikTokPixelId || null,
+        tikTokEvents: tikTokEvents || null,
+        googlePixelId: googlePixelId || null,
+        googleEvents: googleEvents || null
       }
     });
 

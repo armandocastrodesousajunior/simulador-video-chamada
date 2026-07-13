@@ -191,6 +191,38 @@ export default function CallPage() {
           }
         }
 
+        // Inicializa o TikTok Pixel
+        if (data.callCenter?.tikTokPixelId) {
+          const ttId = data.callCenter.tikTokPixelId;
+          const w = window as any;
+          if (!w.ttq) {
+            (function (w:any, d:any, t:any) {
+              w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie","holdConsent","revokeConsent","grantConsent"],ttq.setAndDefer=function(t:any,e:any){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t:any){for(
+              var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e:any,n:any){var r="https://analytics.tiktok.com/i18n/pixel/events.js",o=n&&n.partner;ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=r,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};n=document.createElement("script")
+              ;n.type="text/javascript",n.async=!0,n.src=r+"?sdkid="+e+"&lib="+t;e=document.getElementsByTagName("script")[0];e.parentNode.insertBefore(n,e)};
+              ttq.load(ttId);
+              ttq.page();
+            })(window, document, 'ttq');
+          }
+        }
+
+        // Inicializa o Google Tag
+        if (data.callCenter?.googlePixelId) {
+          const gId = data.callCenter.googlePixelId;
+          const w = window as any;
+          if (!w.gtag) {
+            const script = document.createElement('script');
+            script.src = `https://www.googletagmanager.com/gtag/js?id=${gId}`;
+            script.async = true;
+            document.head.appendChild(script);
+
+            w.dataLayer = w.dataLayer || [];
+            w.gtag = function(){ w.dataLayer.push(arguments); };
+            w.gtag('js', new Date());
+            w.gtag('config', gId);
+          }
+        }
+
         if (data.status === "CREATED") {
           setStatus("INCOMING");
           updateCallStatus("ACCESSED", undefined, undefined, data);
@@ -229,7 +261,7 @@ export default function CallPage() {
   const updateCallStatus = async (newStatus: string, watchTime?: number, mediaDuration?: number, freshData?: any) => {
     const currentData = freshData || callData;
     
-    // 1. Dispara evento do Pixel se estiver configurado
+    // 1. Dispara evento do Meta Pixel se estiver configurado
     if (currentData?.callCenter?.pixelId && currentData?.callCenter?.pixelEvents) {
       try {
         const eventsMap = JSON.parse(currentData.callCenter.pixelEvents);
@@ -248,6 +280,40 @@ export default function CallPage() {
         }
       } catch (e) {
         console.error("Erro ao processar eventos do Pixel", e);
+      }
+    }
+
+    // 1.1 Dispara TikTok Pixel
+    if (currentData?.callCenter?.tikTokPixelId && currentData?.callCenter?.tikTokEvents) {
+      try {
+        const eventsMap = JSON.parse(currentData.callCenter.tikTokEvents);
+        const mappedEvent = eventsMap[newStatus];
+        if (mappedEvent && mappedEvent.trim() !== "") {
+          const w = window as any;
+          if (w.ttq) {
+            w.ttq.track(mappedEvent.trim());
+            console.log(`[TikTok Pixel] Evento disparado para status ${newStatus}: ${mappedEvent.trim()}`);
+          }
+        }
+      } catch (e) {
+        console.error("Erro ao processar eventos do TikTok", e);
+      }
+    }
+
+    // 1.2 Dispara Google Tag
+    if (currentData?.callCenter?.googlePixelId && currentData?.callCenter?.googleEvents) {
+      try {
+        const eventsMap = JSON.parse(currentData.callCenter.googleEvents);
+        const mappedEvent = eventsMap[newStatus];
+        if (mappedEvent && mappedEvent.trim() !== "") {
+          const w = window as any;
+          if (w.gtag) {
+            w.gtag('event', mappedEvent.trim());
+            console.log(`[Google Tag] Evento disparado para status ${newStatus}: ${mappedEvent.trim()}`);
+          }
+        }
+      } catch (e) {
+        console.error("Erro ao processar eventos do Google", e);
       }
     }
 

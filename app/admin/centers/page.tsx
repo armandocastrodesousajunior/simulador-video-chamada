@@ -21,16 +21,23 @@ export default function CentersPage() {
   const [allowRetryIfNotCompleted, setAllowRetryIfNotCompleted] = useState(false);
   const [requireEndCallConfirmation, setRequireEndCallConfirmation] = useState(true);
   
-  // Pixel states
   const [pixelId, setPixelId] = useState("");
   const [pixelEvents, setPixelEvents] = useState<Record<string, string>>({
-    CREATED: "",
-    ACCESSED: "",
-    STARTED: "",
-    COMPLETED: "",
-    REJECTED: "",
-    ABANDONED: ""
+    CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: ""
   });
+  
+  const [tikTokPixelId, setTikTokPixelId] = useState("");
+  const [tikTokEvents, setTikTokEvents] = useState<Record<string, string>>({
+    CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: ""
+  });
+  
+  const [googlePixelId, setGooglePixelId] = useState("");
+  const [googleEvents, setGoogleEvents] = useState<Record<string, string>>({
+    CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: ""
+  });
+  
+  // Accordion state
+  const [expandedTracker, setExpandedTracker] = useState<"META" | "TIKTOK" | "GOOGLE" | null>(null);
 
   const loadData = async () => {
     const resCenters = await fetch("/api/admin/centers");
@@ -54,17 +61,26 @@ export default function CentersPage() {
       setAllowRetryIfNotCompleted(center.allowRetryIfNotCompleted);
       setRequireEndCallConfirmation(center.requireEndCallConfirmation ?? true);
       setPixelId(center.pixelId || "");
+      setTikTokPixelId(center.tikTokPixelId || "");
+      setGooglePixelId(center.googlePixelId || "");
       
-      let events = {
-        CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: ""
-      };
+      let events = { CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: "" };
       if (center.pixelEvents) {
-        try {
-          const parsed = JSON.parse(center.pixelEvents);
-          events = { ...events, ...parsed };
-        } catch (e) {}
+        try { const parsed = JSON.parse(center.pixelEvents); events = { ...events, ...parsed }; } catch (e) {}
       }
       setPixelEvents(events);
+      
+      let ttEvents = { CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: "" };
+      if (center.tikTokEvents) {
+        try { const parsed = JSON.parse(center.tikTokEvents); ttEvents = { ...ttEvents, ...parsed }; } catch (e) {}
+      }
+      setTikTokEvents(ttEvents);
+      
+      let gEvents = { CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: "" };
+      if (center.googleEvents) {
+        try { const parsed = JSON.parse(center.googleEvents); gEvents = { ...gEvents, ...parsed }; } catch (e) {}
+      }
+      setGoogleEvents(gEvents);
     } else {
       setEditingId(null);
       setName("");
@@ -76,9 +92,12 @@ export default function CentersPage() {
       setAllowRetryIfNotCompleted(false);
       setRequireEndCallConfirmation(true);
       setPixelId("");
-      setPixelEvents({
-        CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: ""
-      });
+      setPixelEvents({ CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: "" });
+      setTikTokPixelId("");
+      setTikTokEvents({ CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: "" });
+      setGooglePixelId("");
+      setGoogleEvents({ CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: "" });
+      setExpandedTracker(null);
     }
     setIsModalOpen(true);
   };
@@ -88,9 +107,9 @@ export default function CentersPage() {
     setEditingId(null);
   };
 
-  const handlePixelEventChange = (status: string, value: string) => {
-    setPixelEvents(prev => ({ ...prev, [status]: value }));
-  };
+  const handlePixelEventChange = (status: string, value: string) => { setPixelEvents(prev => ({ ...prev, [status]: value })); };
+  const handleTikTokEventChange = (status: string, value: string) => { setTikTokEvents(prev => ({ ...prev, [status]: value })); };
+  const handleGoogleEventChange = (status: string, value: string) => { setGoogleEvents(prev => ({ ...prev, [status]: value })); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,7 +125,11 @@ export default function CentersPage() {
       allowRetryIfNotCompleted,
       requireEndCallConfirmation,
       pixelId,
-      pixelEvents: JSON.stringify(pixelEvents)
+      pixelEvents: JSON.stringify(pixelEvents),
+      tikTokPixelId,
+      tikTokEvents: JSON.stringify(tikTokEvents),
+      googlePixelId,
+      googleEvents: JSON.stringify(googleEvents)
     };
 
     if (editingId) {
@@ -305,50 +328,102 @@ export default function CentersPage() {
                   </label>
                 </div>
 
-                {/* Seção Meta Pixel */}
-                <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--primary)', padding: '1.5rem', borderRadius: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--primary)' }}>Integração Meta Pixel (Opcional)</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <label>Pixel ID</label>
-                    <input 
-                      value={pixelId} 
-                      onChange={e => setPixelId(e.target.value)} 
-                      placeholder="Ex: 123456789012345" 
-                      style={{ borderColor: 'var(--primary)' }}
-                    />
+                {/* Seção Rastreamento (Accordions) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <h3 style={{ margin: '0.5rem 0', fontSize: '1.1rem', color: 'var(--text-primary)' }}>Rastreamento e Conversões</h3>
+                  
+                  {/* Meta Pixel */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '0.5rem', overflow: 'hidden' }}>
+                    <div 
+                      onClick={() => setExpandedTracker(expandedTracker === 'META' ? null : 'META')}
+                      style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', backgroundColor: expandedTracker === 'META' ? 'rgba(255,255,255,0.05)' : 'transparent' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontWeight: 600, color: pixelId ? 'var(--primary)' : 'inherit' }}>Meta (Facebook) Pixel</span>
+                        {pixelId && <span style={{ fontSize: '0.7rem', backgroundColor: 'var(--primary)', color: '#000', padding: '0.1rem 0.4rem', borderRadius: '1rem', fontWeight: 800 }}>ATIVO</span>}
+                      </div>
+                      <span style={{ fontSize: '1.2rem', transform: expandedTracker === 'META' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+                    </div>
+                    {expandedTracker === 'META' && (
+                      <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <label>Pixel ID</label>
+                          <input value={pixelId} onChange={e => setPixelId(e.target.value)} placeholder="Ex: 123456789012345" style={{ borderColor: 'var(--primary)' }} />
+                        </div>
+                        {pixelId && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Acessada</label><input value={pixelEvents.ACCESSED} onChange={e => handlePixelEventChange('ACCESSED', e.target.value)} placeholder="Ex: ViewContent" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Iniciada</label><input value={pixelEvents.STARTED} onChange={e => handlePixelEventChange('STARTED', e.target.value)} placeholder="Ex: InitiateCheckout" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Completada</label><input value={pixelEvents.COMPLETED} onChange={e => handlePixelEventChange('COMPLETED', e.target.value)} placeholder="Ex: Purchase" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Abandonada</label><input value={pixelEvents.ABANDONED} onChange={e => handlePixelEventChange('ABANDONED', e.target.value)} placeholder="Opcional" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Rejeitada</label><input value={pixelEvents.REJECTED} onChange={e => handlePixelEventChange('REJECTED', e.target.value)} placeholder="Opcional" /></div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {pixelId && (
-                    <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>
-                        Configure abaixo os eventos do Facebook que devem ser disparados em cada status da chamada (deixe em branco se não quiser rastrear aquele status). 
-                        Ex: <b>ViewContent, InitiateCheckout, Purchase</b>.
-                      </p>
-                      
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          <label style={{ fontSize: '0.8rem' }}>Acessada (ACCESSED)</label>
-                          <input value={pixelEvents.ACCESSED} onChange={e => handlePixelEventChange('ACCESSED', e.target.value)} placeholder="Ex: ViewContent" />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          <label style={{ fontSize: '0.8rem' }}>Iniciada (STARTED)</label>
-                          <input value={pixelEvents.STARTED} onChange={e => handlePixelEventChange('STARTED', e.target.value)} placeholder="Ex: InitiateCheckout" />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          <label style={{ fontSize: '0.8rem' }}>Completada (COMPLETED)</label>
-                          <input value={pixelEvents.COMPLETED} onChange={e => handlePixelEventChange('COMPLETED', e.target.value)} placeholder="Ex: Purchase" />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          <label style={{ fontSize: '0.8rem' }}>Abandonada (ABANDONED)</label>
-                          <input value={pixelEvents.ABANDONED} onChange={e => handlePixelEventChange('ABANDONED', e.target.value)} placeholder="Deixar vazio..." />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          <label style={{ fontSize: '0.8rem' }}>Rejeitada (REJECTED)</label>
-                          <input value={pixelEvents.REJECTED} onChange={e => handlePixelEventChange('REJECTED', e.target.value)} placeholder="Deixar vazio..." />
-                        </div>
+                  {/* TikTok Pixel */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '0.5rem', overflow: 'hidden' }}>
+                    <div 
+                      onClick={() => setExpandedTracker(expandedTracker === 'TIKTOK' ? null : 'TIKTOK')}
+                      style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', backgroundColor: expandedTracker === 'TIKTOK' ? 'rgba(255,255,255,0.05)' : 'transparent' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontWeight: 600, color: tikTokPixelId ? '#25F4EE' : 'inherit' }}>TikTok Pixel</span>
+                        {tikTokPixelId && <span style={{ fontSize: '0.7rem', backgroundColor: '#25F4EE', color: '#000', padding: '0.1rem 0.4rem', borderRadius: '1rem', fontWeight: 800 }}>ATIVO</span>}
                       </div>
+                      <span style={{ fontSize: '1.2rem', transform: expandedTracker === 'TIKTOK' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
                     </div>
-                  )}
+                    {expandedTracker === 'TIKTOK' && (
+                      <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <label>Pixel ID</label>
+                          <input value={tikTokPixelId} onChange={e => setTikTokPixelId(e.target.value)} placeholder="Ex: D9AC5URC77U10..." style={{ borderColor: '#25F4EE' }} />
+                        </div>
+                        {tikTokPixelId && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Acessada</label><input value={tikTokEvents.ACCESSED} onChange={e => handleTikTokEventChange('ACCESSED', e.target.value)} placeholder="Ex: ViewContent" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Iniciada</label><input value={tikTokEvents.STARTED} onChange={e => handleTikTokEventChange('STARTED', e.target.value)} placeholder="Ex: InitiateCheckout" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Completada</label><input value={tikTokEvents.COMPLETED} onChange={e => handleTikTokEventChange('COMPLETED', e.target.value)} placeholder="Ex: PlaceAnOrder" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Abandonada</label><input value={tikTokEvents.ABANDONED} onChange={e => handleTikTokEventChange('ABANDONED', e.target.value)} placeholder="Opcional" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Rejeitada</label><input value={tikTokEvents.REJECTED} onChange={e => handleTikTokEventChange('REJECTED', e.target.value)} placeholder="Opcional" /></div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Google Tag */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '0.5rem', overflow: 'hidden' }}>
+                    <div 
+                      onClick={() => setExpandedTracker(expandedTracker === 'GOOGLE' ? null : 'GOOGLE')}
+                      style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', backgroundColor: expandedTracker === 'GOOGLE' ? 'rgba(255,255,255,0.05)' : 'transparent' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontWeight: 600, color: googlePixelId ? '#4285F4' : 'inherit' }}>Google Tag (Ads/Analytics)</span>
+                        {googlePixelId && <span style={{ fontSize: '0.7rem', backgroundColor: '#4285F4', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: '1rem', fontWeight: 800 }}>ATIVO</span>}
+                      </div>
+                      <span style={{ fontSize: '1.2rem', transform: expandedTracker === 'GOOGLE' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+                    </div>
+                    {expandedTracker === 'GOOGLE' && (
+                      <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <label>Measurement ID / Conversion ID</label>
+                          <input value={googlePixelId} onChange={e => setGooglePixelId(e.target.value)} placeholder="Ex: G-XXXXXXXX ou AW-XXXXXXXX" style={{ borderColor: '#4285F4' }} />
+                        </div>
+                        {googlePixelId && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Acessada</label><input value={googleEvents.ACCESSED} onChange={e => handleGoogleEventChange('ACCESSED', e.target.value)} placeholder="Ex: page_view" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Iniciada</label><input value={googleEvents.STARTED} onChange={e => handleGoogleEventChange('STARTED', e.target.value)} placeholder="Ex: begin_checkout" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Completada</label><input value={googleEvents.COMPLETED} onChange={e => handleGoogleEventChange('COMPLETED', e.target.value)} placeholder="Ex: purchase" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Abandonada</label><input value={googleEvents.ABANDONED} onChange={e => handleGoogleEventChange('ABANDONED', e.target.value)} placeholder="Opcional" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Rejeitada</label><input value={googleEvents.REJECTED} onChange={e => handleGoogleEventChange('REJECTED', e.target.value)} placeholder="Opcional" /></div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
