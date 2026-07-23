@@ -38,6 +38,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
         tikTokEvents: call.callCenter.tikTokEvents,
         googlePixelId: call.callCenter.googlePixelId,
         googleEvents: call.callCenter.googleEvents,
+        kwaiPixelId: call.callCenter.kwaiPixelId,
+        kwaiEvents: call.callCenter.kwaiEvents,
       },
       media: {
         url: call.callCenter.media.url,

@@ -36,8 +36,13 @@ export default function CentersPage() {
     CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: ""
   });
   
+  const [kwaiPixelId, setKwaiPixelId] = useState("");
+  const [kwaiEvents, setKwaiEvents] = useState<Record<string, string>>({
+    CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: ""
+  });
+  
   // Accordion state
-  const [expandedTracker, setExpandedTracker] = useState<"META" | "TIKTOK" | "GOOGLE" | null>(null);
+  const [expandedTracker, setExpandedTracker] = useState<"META" | "TIKTOK" | "GOOGLE" | "KWAI" | null>(null);
 
   const loadData = async () => {
     const resCenters = await fetch("/api/admin/centers");
@@ -81,6 +86,12 @@ export default function CentersPage() {
         try { const parsed = JSON.parse(center.googleEvents); gEvents = { ...gEvents, ...parsed }; } catch (e) {}
       }
       setGoogleEvents(gEvents);
+      
+      let kEvents = { CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: "" };
+      if (center.kwaiEvents) {
+        try { const parsed = JSON.parse(center.kwaiEvents); kEvents = { ...kEvents, ...parsed }; } catch (e) {}
+      }
+      setKwaiEvents(kEvents);
     } else {
       setEditingId(null);
       setName("");
@@ -97,6 +108,8 @@ export default function CentersPage() {
       setTikTokEvents({ CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: "" });
       setGooglePixelId("");
       setGoogleEvents({ CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: "" });
+      setKwaiPixelId("");
+      setKwaiEvents({ CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: "" });
       setExpandedTracker(null);
     }
     setIsModalOpen(true);
@@ -110,6 +123,7 @@ export default function CentersPage() {
   const handlePixelEventChange = (status: string, value: string) => { setPixelEvents(prev => ({ ...prev, [status]: value })); };
   const handleTikTokEventChange = (status: string, value: string) => { setTikTokEvents(prev => ({ ...prev, [status]: value })); };
   const handleGoogleEventChange = (status: string, value: string) => { setGoogleEvents(prev => ({ ...prev, [status]: value })); };
+  const handleKwaiEventChange = (status: string, value: string) => { setKwaiEvents(prev => ({ ...prev, [status]: value })); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,7 +143,9 @@ export default function CentersPage() {
       tikTokPixelId,
       tikTokEvents: JSON.stringify(tikTokEvents),
       googlePixelId,
-      googleEvents: JSON.stringify(googleEvents)
+      googleEvents: JSON.stringify(googleEvents),
+      kwaiPixelId,
+      kwaiEvents: JSON.stringify(kwaiEvents)
     };
 
     if (editingId) {
@@ -419,6 +435,37 @@ export default function CentersPage() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Completada</label><input value={googleEvents.COMPLETED} onChange={e => handleGoogleEventChange('COMPLETED', e.target.value)} placeholder="Ex: purchase" /></div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Abandonada</label><input value={googleEvents.ABANDONED} onChange={e => handleGoogleEventChange('ABANDONED', e.target.value)} placeholder="Opcional" /></div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Rejeitada</label><input value={googleEvents.REJECTED} onChange={e => handleGoogleEventChange('REJECTED', e.target.value)} placeholder="Opcional" /></div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Kwai Pixel */}
+                  <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '0.5rem', overflow: 'hidden' }}>
+                    <div 
+                      onClick={() => setExpandedTracker(expandedTracker === 'KWAI' ? null : 'KWAI')}
+                      style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', backgroundColor: expandedTracker === 'KWAI' ? 'rgba(255,255,255,0.05)' : 'transparent' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontWeight: 600, color: kwaiPixelId ? '#FF6B00' : 'inherit' }}>Kwai Pixel</span>
+                        {kwaiPixelId && <span style={{ fontSize: '0.7rem', backgroundColor: '#FF6B00', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: '1rem', fontWeight: 800 }}>ATIVO</span>}
+                      </div>
+                      <span style={{ fontSize: '1.2rem', transform: expandedTracker === 'KWAI' ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▼</span>
+                    </div>
+                    {expandedTracker === 'KWAI' && (
+                      <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <label>Pixel ID</label>
+                          <input value={kwaiPixelId} onChange={e => setKwaiPixelId(e.target.value)} placeholder="Ex: 1234567890123" style={{ borderColor: '#FF6B00' }} />
+                        </div>
+                        {kwaiPixelId && (
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Acessada</label><input value={kwaiEvents.ACCESSED} onChange={e => handleKwaiEventChange('ACCESSED', e.target.value)} placeholder="Ex: contentView" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Iniciada</label><input value={kwaiEvents.STARTED} onChange={e => handleKwaiEventChange('STARTED', e.target.value)} placeholder="Ex: addToCart" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Completada</label><input value={kwaiEvents.COMPLETED} onChange={e => handleKwaiEventChange('COMPLETED', e.target.value)} placeholder="Ex: purchase" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Abandonada</label><input value={kwaiEvents.ABANDONED} onChange={e => handleKwaiEventChange('ABANDONED', e.target.value)} placeholder="Opcional" /></div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}><label style={{ fontSize: '0.8rem' }}>Rejeitada</label><input value={kwaiEvents.REJECTED} onChange={e => handleKwaiEventChange('REJECTED', e.target.value)} placeholder="Opcional" /></div>
                           </div>
                         )}
                       </div>
