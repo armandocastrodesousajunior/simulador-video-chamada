@@ -25,6 +25,7 @@ services:
       - DATABASE_URL=postgresql://simulatecall:secretpassword@db:5432/simulatecall_db?schema=public
       - ADMIN_TOKEN=super_secret_token_2026
       - APP_URL=$SERVICE_URL_APP
+      - LOG_EXPIRATION_DAYS=5
     volumes:
       # Garante que os arquivos locais da pasta uploads persistem mesmo se o container reiniciar
       - media_uploads:/app/public/uploads
