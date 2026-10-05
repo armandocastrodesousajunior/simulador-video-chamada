@@ -59,14 +59,141 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      {activeTab === "general" && (
-        <div className="glass-panel" style={{ padding: '2rem' }}>
-          <h2 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Configurações Gerais</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>Opções gerais do sistema (em breve).</p>
-        </div>
-      )}
+      {activeTab === "general" && <GeneralSettingsTab />}
 
       {activeTab === "mcp" && <McpSettingsTab />}
+    </div>
+  );
+}
+
+function GeneralSettingsTab() {
+  const [info, setInfo] = useState<{ expirationDays: number; cutoffDate: string; message: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [cleaning, setCleaning] = useState(false);
+  const [result, setResult] = useState<any>(null);
+
+  const loadInfo = () => {
+    fetch("/api/admin/cleanup")
+      .then(res => res.json())
+      .then(data => {
+        setInfo(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadInfo();
+  }, []);
+
+  const handleManualCleanup = async () => {
+    if (!confirm("Deseja executar a limpeza de logs e chamadas expiradas agora?")) return;
+    setCleaning(true);
+    setResult(null);
+
+    try {
+      const res = await fetch("/api/admin/cleanup", { method: "POST" });
+      const data = await res.json();
+      setResult(data);
+      loadInfo();
+    } catch (e) {
+      alert("Erro ao executar limpeza");
+    } finally {
+      setCleaning(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* Card Retenção de Logs */}
+      <div className="glass-panel" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h2 style={{ fontSize: '1.3rem', fontWeight: 600, margin: '0 0 0.5rem 0' }}>Política de Limpeza e Retenção de Logs</h2>
+            <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '0.9rem', maxWidth: '600px', lineHeight: 1.5 }}>
+              Para evitar o acúmulo infinito de dados no banco, os eventos de chamadas (acessos, inícios, abandonos) e chamadas antigas perdem a validade após o período configurado.
+            </p>
+          </div>
+
+          <button 
+            onClick={handleManualCleanup} 
+            disabled={cleaning}
+            className="btn btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: cleaning ? 0.7 : 1 }}
+          >
+            <RefreshCw size={16} className={cleaning ? "animate-spin" : ""} />
+            {cleaning ? "Limpando..." : "Executar Limpeza Agora"}
+          </button>
+        </div>
+
+        {/* Estatísticas e Parâmetros */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '0.5rem' }}>
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '0.75rem', padding: '1.25rem' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Tempo de Expiração</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', marginTop: '0.25rem' }}>
+              <span style={{ fontSize: '1.8rem', fontWeight: 700, color: 'var(--primary)' }}>
+                {loading ? "..." : info?.expirationDays ?? 7}
+              </span>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>dias</span>
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.4rem 0 0 0' }}>
+              Configurado via <code style={{ color: '#a5b4fc' }}>LOG_EXPIRATION_DAYS</code> no <code style={{ color: '#a5b4fc' }}>.env</code>
+            </p>
+          </div>
+
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '0.75rem', padding: '1.25rem' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Data Limite de Corte</span>
+            <div style={{ marginTop: '0.4rem', fontSize: '1rem', fontWeight: 600 }}>
+              {loading ? "..." : info?.cutoffDate ? new Date(info.cutoffDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "Calculando..."}
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.4rem 0 0 0' }}>
+              Registros anteriores a esta data são expurgados.
+            </p>
+          </div>
+
+          <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', borderRadius: '0.75rem', padding: '1.25rem' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Limpeza Automática</span>
+            <div style={{ marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)' }} />
+              <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--success)' }}>Ativa</span>
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.4rem 0 0 0' }}>
+              Execução periódica passiva em background.
+            </p>
+          </div>
+        </div>
+
+        {/* Feedback da Limpeza Manual */}
+        {result && (
+          <div style={{ 
+            background: result.success ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)', 
+            border: `1px solid ${result.success ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+            borderRadius: '0.5rem', 
+            padding: '1rem',
+            fontSize: '0.9rem',
+            color: result.success ? '#86efac' : '#fca5a5'
+          }}>
+            {result.success ? (
+              <span>
+                ✅ Limpeza concluída com sucesso! <strong>{result.deletedEvents}</strong> eventos de log e <strong>{result.deletedCalls}</strong> chamadas expiradas foram removidos.
+              </span>
+            ) : (
+              <span>❌ Erro ao executar limpeza: {result.error}</span>
+            )}
+          </div>
+        )}
+
+        {/* Informações para Cron Job Externo */}
+        <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px dashed var(--border)', borderRadius: '0.5rem', padding: '1rem', fontSize: '0.825rem', color: 'var(--text-secondary)' }}>
+          <p style={{ margin: '0 0 0.5rem 0', fontWeight: 600, color: 'var(--text-primary)' }}>💡 Dica: Agendamento via Cron Externo</p>
+          <p style={{ margin: 0, lineHeight: 1.5 }}>
+            Se você utiliza EasyCron, Cron-Job.org ou GitHub Actions, pode disparar a limpeza diária fazendo uma requisição GET para:<br />
+            <code style={{ color: '#38bdf8', background: 'rgba(0,0,0,0.3)', padding: '0.2rem 0.5rem', borderRadius: '4px', display: 'inline-block', marginTop: '0.3rem' }}>
+              {typeof window !== 'undefined' ? window.location.origin : ""}/api/admin/cleanup?run=true
+            </code>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

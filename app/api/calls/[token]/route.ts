@@ -40,6 +40,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
         googleEvents: call.callCenter.googleEvents,
         kwaiPixelId: call.callCenter.kwaiPixelId,
         kwaiEvents: call.callCenter.kwaiEvents,
+        template: (call.callCenter as any).template || "DEFAULT",
       },
       media: {
         url: call.callCenter.media.url,

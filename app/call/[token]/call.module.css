@@ -720,3 +720,139 @@
   line-height: 1.45;
   font-weight: 400;
 }
+
+/* ══════════════════════════════════════════════════════════
+   CLASSES ESPECÍFICAS DE CADA TEMA (TELEGRAM, WHATSAPP, DEFAULT)
+   ══════════════════════════════════════════════════════════ */
+
+/* ── TEMA TELEGRAM ── */
+.themeTelegramIncoming {
+  background: radial-gradient(circle at 50% 30%, #172436 0%, #0e1621 70%, #080d14 100%) !important;
+}
+
+.tgKeyBadge {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+
+.tgDeclineBtn {
+  background: #ff3b30 !important;
+  box-shadow: 0 4px 20px rgba(255, 59, 48, 0.45) !important;
+}
+
+.tgAcceptBtn {
+  background: #34c759 !important;
+  box-shadow: 0 4px 20px rgba(52, 199, 89, 0.45) !important;
+}
+
+/* ── TEMA WHATSAPP ── */
+.themeWhatsappIncoming {
+  background: linear-gradient(180deg, #101d24 0%, #0b141a 100%) !important;
+}
+
+.waLockBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #8696a0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.waSubTitle {
+  color: #8696a0 !important;
+  font-size: 0.95rem !important;
+  font-weight: 400 !important;
+}
+
+.waDeclineBtn {
+  background: #ea0038 !important;
+  box-shadow: 0 4px 20px rgba(234, 0, 56, 0.45) !important;
+}
+
+.waAcceptBtn {
+  background: #25d366 !important;
+  box-shadow: 0 4px 20px rgba(37, 211, 102, 0.45) !important;
+}
+
+.waControlsDock {
+  background: rgba(31, 44, 52, 0.94) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 40px !important;
+  padding: 10px 16px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+/* ── TEMA APP PADRÃO (INDEPENDENTE) ── */
+.themeDefaultIncoming {
+  background: radial-gradient(circle at 50% 25%, #18182b 0%, #0a0b10 70%, #050608 100%) !important;
+}
+
+.defaultHeaderBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  color: #a5b4fc;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.livePulseDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  animation: liveDotPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes liveDotPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.4); opacity: 0.6; }
+}
+
+.defaultAvatarRing {
+  border: 3px solid transparent;
+  background-origin: border-box;
+  background-clip: content-box, border-box;
+  background-image: linear-gradient(#000, #000), linear-gradient(135deg, #6366f1, #06b6d4);
+  box-shadow: 0 0 35px rgba(99, 102, 241, 0.35);
+}
+
+.defaultDeclineBtn {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border: 1.5px solid rgba(239, 68, 68, 0.5) !important;
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.25) !important;
+}
+
+.defaultAcceptBtn {
+  background: linear-gradient(135deg, #6366f1, #06b6d4) !important;
+  box-shadow: 0 4px 25px rgba(99, 102, 241, 0.45) !important;
+}
+
+.defaultControlsDock {
+  background: rgba(15, 23, 42, 0.88) !important;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px !important;
+  padding: 10px 16px !important;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7);
+}

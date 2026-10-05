@@ -114,8 +114,28 @@ const IconLock = () => (
 );
 
 const TelegramIcon = () => (
-  <svg width="72" height="72" viewBox="0 0 24 24" fill="#2AABEE">
+  <svg width="72" height="72" viewBox="0 0 24 24" fill="#2481cc">
     <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.93 6.66l-1.68 7.93c-.13.58-.47.72-.95.45l-2.62-1.93-1.26 1.22c-.14.14-.26.26-.53.26l.19-2.66 4.84-4.37c.21-.19-.05-.29-.32-.1L7.78 14.3 5.2 13.5c-.56-.18-.57-.56.12-.83l9.4-3.62c.47-.17.88.11.71.83l.5-.72z"/>
+  </svg>
+);
+
+const WhatsAppLogoIcon = () => (
+  <svg width="72" height="72" viewBox="0 0 24 24" fill="#25D366">
+    <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.63C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2ZM12.05 20.15C10.57 20.15 9.12 19.76 7.85 19L7.55 18.82L4.43 19.64L5.26 16.6L5.07 16.29C4.24 14.97 3.8 13.46 3.8 11.91C3.8 7.37 7.5 3.67 12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.59 20.15 12.05 20.15ZM16.57 14.12C16.32 14 15.1 13.4 14.88 13.31C14.65 13.23 14.49 13.19 14.32 13.44C14.16 13.69 13.69 14.24 13.55 14.41C13.4 14.57 13.26 14.6 13.01 14.47C12.77 14.35 11.98 14.09 11.04 13.25C10.31 12.6 9.82 11.79 9.67 11.54C9.53 11.3 9.66 11.16 9.78 11.04C9.89 10.93 10.03 10.75 10.15 10.6C10.28 10.46 10.32 10.35 10.4 10.18C10.48 10.02 10.44 9.87 10.38 9.75C10.32 9.63 9.83 8.42 9.63 7.92C9.43 7.44 9.23 7.51 9.08 7.5H8.61C8.45 7.5 8.18 7.56 7.96 7.81C7.73 8.05 7.1 8.64 7.1 9.85C7.1 11.06 7.98 12.23 8.1 12.39C8.23 12.55 9.83 15.03 12.3 16.09C12.89 16.34 13.35 16.49 13.7 16.6C14.29 16.79 14.83 16.76 15.26 16.7C15.74 16.63 16.74 16.09 16.95 15.5C17.16 14.9 17.16 14.4 17.1 14.29C17.03 14.18 16.82 14.25 16.57 14.12Z"/>
+  </svg>
+);
+
+const AppLogoIcon = () => (
+  <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="11" fill="url(#appLogoIconGrad)" />
+    <polygon points="17 8.5 13 11.5 17 14.5 17 8.5" fill="white"/>
+    <rect x="7" y="8" width="6.5" height="8" rx="1.5" fill="white"/>
+    <defs>
+      <linearGradient id="appLogoIconGrad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#6366f1"/>
+        <stop offset="1" stopColor="#06b6d4"/>
+      </linearGradient>
+    </defs>
   </svg>
 );
 
@@ -485,28 +505,44 @@ export default function CallPage() {
   }, []);
 
   const handleCloseTab = useCallback(() => {
-    // 1. Hack para navegadores que bloqueiam window.close() direto
+    // 1. Hack para navegadores que fecham a janela
     window.open('', '_self', '');
     window.close();
     
-    // 2. Fallback 1: Tenta forçar a volta para o Telegram usando o esquema de URL deles
-    setTimeout(() => {
-      window.location.href = 'tg://';
-    }, 100);
+    // 2. Redirecionamento de app específico
+    const tmpl = callData?.callCenter?.template || "DEFAULT";
+    if (tmpl === "TELEGRAM") {
+      setTimeout(() => {
+        window.location.href = 'tg://';
+      }, 100);
+    } else if (tmpl === "WHATSAPP") {
+      setTimeout(() => {
+        window.location.href = 'whatsapp://';
+      }, 100);
+    }
 
-    // 3. Fallback 2: Se não tiver o app instalado ou bloquear o tg://, redireciona pra tela em branco
+    // 3. Fallback: tela limpa
     setTimeout(() => {
       window.location.href = 'about:blank';
     }, 500);
-  }, []);
+  }, [callData]);
 
   // ── Renders por estado ─────────────────────────────────
+  const template = callData?.callCenter?.template || "DEFAULT";
+  const isWpp = template === "WHATSAPP";
+  const isTg = template === "TELEGRAM";
 
   if (status === "LOADING") {
     return (
       <div className={styles.loadingScreen}>
         <div className={styles.loadingIcon}>
-          <TelegramIcon />
+          {isWpp ? (
+            <WhatsAppLogoIcon />
+          ) : isTg ? (
+            <TelegramIcon />
+          ) : (
+            <AppLogoIcon />
+          )}
         </div>
       </div>
     );
@@ -520,23 +556,37 @@ export default function CallPage() {
         {/* Top: Conexão Segura */}
         <div className={styles.sessionTopBar}>
           <IconLockOutline />
-          <span>Conexão segura</span>
+          <span>{isWpp ? "Criptografia de ponta a ponta" : isTg ? "Conexão segura Telegram" : "Conexão Segura e Criptografada"}</span>
         </div>
 
         <div className={styles.sessionContent}>
           {/* Main Icon */}
           <div className={styles.sessionIconWrapper}>
-            <div className={styles.sessionIconBg}>
+            <div className={styles.sessionIconBg} style={{
+              background: isWpp ? '#25d366' : isTg ? '#2481cc' : 'linear-gradient(135deg, #6366f1, #06b6d4)'
+            }}>
               <IconVideoCamera />
             </div>
-            <div className={styles.sessionIconGlow} />
+            <div className={styles.sessionIconGlow} style={{
+              background: isWpp 
+                ? 'radial-gradient(circle, rgba(37, 211, 102, 0.4) 0%, transparent 70%)'
+                : isTg
+                ? 'radial-gradient(circle, rgba(36, 129, 204, 0.4) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(99, 102, 241, 0.4) 0%, transparent 70%)'
+            }} />
           </div>
 
           <h2 className={styles.sessionTitle}>
-            {status === "NOT_FOUND" ? "Sessão inválida" : "Chamada finalizada"}
+            {status === "NOT_FOUND" 
+              ? "Sessão inválida" 
+              : isWpp 
+              ? "Chamada do WhatsApp finalizada" 
+              : isTg 
+              ? "Chamada do Telegram finalizada" 
+              : "Chamada finalizada"}
           </h2>
           <p className={styles.sessionSub}>
-            {status === "NOT_FOUND" ? "Este link não pode ser acessado." : "Sua sessão foi encerrada com sucesso."}
+            {status === "NOT_FOUND" ? "Este link não pode ser acessado." : "Sua sessão de vídeo foi encerrada com sucesso."}
           </p>
 
           {/* Card Segurança */}
@@ -545,7 +595,9 @@ export default function CallPage() {
               <IconShieldLock />
             </div>
             <div className={styles.securityCardTexts}>
-              <p className={styles.securityCardTitle}>Sessão única</p>
+              <p className={styles.securityCardTitle}>
+                {isWpp ? "Chamada protegida" : isTg ? "Sessão única de vídeo" : "Sessão única e segura"}
+              </p>
               <p className={styles.securityCardDesc}>
                 Por segurança e privacidade, cada link de chamada só pode ser usado uma vez.
               </p>
@@ -565,8 +617,20 @@ export default function CallPage() {
 
         {/* Action Button */}
         <div className={styles.sessionBottomBar}>
-          <button className={styles.btnPrimaryGradient} onClick={handleCloseTab}>
-            Fechar
+          <button 
+            className={styles.btnPrimaryGradient} 
+            onClick={handleCloseTab}
+            style={{
+              background: isWpp 
+                ? '#25d366' 
+                : isTg 
+                ? '#2481cc' 
+                : 'linear-gradient(135deg, #6366f1, #06b6d4)',
+              color: isWpp ? '#000' : '#fff',
+              fontWeight: 700
+            }}
+          >
+            Fechar Janela
           </button>
         </div>
 
@@ -578,8 +642,29 @@ export default function CallPage() {
   const displayName = callData?.callCenter?.displayName || "Desconhecido";
 
   if (status === "INCOMING") {
+    const isWpp = template === "WHATSAPP";
+    const isTg = template === "TELEGRAM";
+
+    const incomingClass = isWpp 
+      ? `${styles.incomingScreen} ${styles.themeWhatsappIncoming}`
+      : isTg
+      ? `${styles.incomingScreen} ${styles.themeTelegramIncoming}`
+      : `${styles.incomingScreen} ${styles.themeDefaultIncoming}`;
+
+    const declineCircleClass = isWpp
+      ? `${styles.actionBtnCircle} ${styles.waDeclineBtn}`
+      : isTg
+      ? `${styles.actionBtnCircle} ${styles.tgDeclineBtn}`
+      : `${styles.actionBtnCircle} ${styles.defaultDeclineBtn}`;
+
+    const acceptCircleClass = isWpp
+      ? `${styles.actionBtnCircle} ${styles.waAcceptBtn}`
+      : isTg
+      ? `${styles.actionBtnCircle} ${styles.tgAcceptBtn}`
+      : `${styles.actionBtnCircle} ${styles.defaultAcceptBtn}`;
+
     return (
-      <div className={styles.incomingScreen}>
+      <div className={incomingClass}>
         {/* Top Bar */}
         <div className={styles.topBar}>
           <button
@@ -589,18 +674,38 @@ export default function CallPage() {
           >
             <IconBack />
           </button>
-          <h1 className={styles.topBarTitle}>Chamada de vídeo</h1>
-          <div className={styles.topBarLock}>
-            <IconLock />
-          </div>
+
+          {isWpp ? (
+            <div className={styles.waLockBadge}>
+              <IconLockOutline />
+              <span>Criptografia de ponta a ponta</span>
+            </div>
+          ) : isTg ? (
+            <h1 className={styles.topBarTitle}>Chamada de vídeo</h1>
+          ) : (
+            <div className={styles.defaultHeaderBadge}>
+              <span className={styles.livePulseDot} />
+              <span>SALA DE VÍDEO CONECTADA</span>
+            </div>
+          )}
+
+          {isTg ? (
+            <div className={styles.tgKeyBadge} title="Chaves de segurança de ponta a ponta">
+              <span>🍋</span><span>⚡</span><span>💎</span><span>🦊</span>
+            </div>
+          ) : (
+            <div className={styles.topBarLock}>
+              <IconLock />
+            </div>
+          )}
         </div>
 
         {/* Avatar + Caller Info */}
         <div className={styles.incomingCenter}>
-          <div className={styles.avatarWrapper}>
-            <div className={styles.pulseRing} />
-            <div className={styles.pulseRing} />
-            <div className={styles.pulseRing} />
+          <div className={`${styles.avatarWrapper} ${!isWpp && !isTg ? styles.defaultAvatarRing : ""}`}>
+            <div className={styles.pulseRing} style={{ borderColor: isWpp ? 'rgba(37, 211, 102, 0.4)' : isTg ? 'rgba(36, 129, 204, 0.4)' : 'rgba(99, 102, 241, 0.4)' }} />
+            <div className={styles.pulseRing} style={{ borderColor: isWpp ? 'rgba(37, 211, 102, 0.3)' : isTg ? 'rgba(36, 129, 204, 0.3)' : 'rgba(99, 102, 241, 0.3)' }} />
+            <div className={styles.pulseRing} style={{ borderColor: isWpp ? 'rgba(37, 211, 102, 0.2)' : isTg ? 'rgba(36, 129, 204, 0.2)' : 'rgba(99, 102, 241, 0.2)' }} />
             {avatarUrl ? (
               <img
                 src={avatarUrl}
@@ -615,7 +720,13 @@ export default function CallPage() {
           </div>
 
           <h2 className={styles.callerName}>{displayName}</h2>
-          <p className={styles.callStatus}>está te chamando...</p>
+          <p className={`${styles.callStatus} ${isWpp ? styles.waSubTitle : ""}`}>
+            {isWpp 
+              ? "Chamada de vídeo do WhatsApp" 
+              : isTg 
+              ? "chamada de vídeo..." 
+              : "convidando para videochamada ao vivo..."}
+          </p>
           <div className={styles.callDots}>
             <span className={styles.dot} />
             <span className={styles.dot} />
@@ -631,7 +742,7 @@ export default function CallPage() {
               onClick={handleDecline}
               aria-label="Recusar"
             >
-              <div className={`${styles.actionBtnCircle} ${styles.actionBtnDecline}`}>
+              <div className={declineCircleClass}>
                 <IconDecline />
               </div>
               <span className={styles.actionBtnLabel}>Recusar</span>
@@ -642,10 +753,10 @@ export default function CallPage() {
               onClick={handleAnswer}
               aria-label="Aceitar"
             >
-              <div className={`${styles.actionBtnCircle} ${styles.actionBtnAccept}`}>
+              <div className={acceptCircleClass}>
                 <IconAccept />
               </div>
-              <span className={styles.actionBtnLabel}>Aceitar</span>
+              <span className={styles.actionBtnLabel}>{isWpp || isTg ? "Atender" : "Entrar na Chamada"}</span>
             </button>
           </div>
           <p className={styles.tapToAnswer}>toque para atender</p>
@@ -665,6 +776,19 @@ export default function CallPage() {
   }
 
   // ── ACTIVE ─────────────────────────────────────────────
+  const isWppActive = template === "WHATSAPP";
+  const isTgActive = template === "TELEGRAM";
+
+  const controlsDockClass = isWppActive 
+    ? `${styles.controlsInner} ${styles.waControlsDock}`
+    : isTgActive
+    ? `${styles.controlsInner}`
+    : `${styles.controlsInner} ${styles.defaultControlsDock}`;
+
+  const endBtnCircleClass = `${styles.ctrlBtnEndCircle} ${
+    isWppActive ? styles.waDeclineBtn : isTgActive ? styles.tgDeclineBtn : styles.defaultDeclineBtn
+  }`;
+
   return (
     <div className={styles.activeScreen}>
       {/* Vídeo em tela cheia */}
@@ -682,12 +806,41 @@ export default function CallPage() {
 
       {/* HUD Superior */}
       <div className={styles.activeHud}>
-        <p className={styles.hudName}>{displayName}</p>
-        <div className={styles.hudTimerRow}>
-          <span className={styles.hudTimer}>{formatTime(elapsed)}</span>
-          <span className={styles.hudLock}>
-            <IconLock />
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '380px' }}>
+          <button 
+            className={styles.topBarBack} 
+            onClick={handleEndCallClick}
+            aria-label="Voltar"
+            style={{ width: 32, height: 32 }}
+          >
+            <IconBack />
+          </button>
+
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+            <p className={styles.hudName}>{displayName}</p>
+            <div className={styles.hudTimerRow}>
+              <span className={styles.hudTimer}>{formatTime(elapsed)}</span>
+              {isWppActive ? (
+                <span style={{ fontSize: '0.7rem', color: '#8696a0', marginLeft: '4px' }}>🔒 Criptografada</span>
+              ) : isTgActive ? (
+                <span className={styles.hudLock}><IconLock /></span>
+              ) : (
+                <span style={{ fontSize: '0.65rem', background: 'rgba(99,102,241,0.25)', color: '#a5b4fc', padding: '1px 6px', borderRadius: '6px', marginLeft: '4px' }}>HD 1080p</span>
+              )}
+            </div>
+          </div>
+
+          {isTgActive ? (
+            <div className={styles.tgKeyBadge} style={{ transform: 'scale(0.85)', transformOrigin: 'right center' }}>
+              <span>🍋</span><span>⚡</span><span>💎</span><span>🦊</span>
+            </div>
+          ) : isWppActive ? (
+            <div style={{ width: 32 }} />
+          ) : (
+            <div style={{ width: 32, display: 'flex', justifyContent: 'flex-end' }}>
+              <span className={styles.livePulseDot} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -711,7 +864,7 @@ export default function CallPage() {
 
       {/* Barra de Controles */}
       <div className={styles.controlsBar}>
-        <div className={styles.controlsInner}>
+        <div className={controlsDockClass}>
 
           {/* Alto-falante — mutar/desmutar o vídeo */}
           <button className={styles.ctrlBtn} onClick={handleToggleSpeaker} aria-label="Alto-falante">
@@ -735,7 +888,7 @@ export default function CallPage() {
             onClick={handleEndCallClick}
             aria-label="Encerrar chamada"
           >
-            <div className={styles.ctrlBtnEndCircle}>
+            <div className={endBtnCircleClass}>
               <IconPhoneEnd />
             </div>
             <span className={styles.ctrlBtnEndLabel}>Encerrar</span>

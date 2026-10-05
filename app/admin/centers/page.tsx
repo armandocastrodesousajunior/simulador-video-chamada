@@ -20,6 +20,7 @@ export default function CentersPage() {
   const [enforceUniqueExternalId, setEnforceUniqueExternalId] = useState(false);
   const [allowRetryIfNotCompleted, setAllowRetryIfNotCompleted] = useState(false);
   const [requireEndCallConfirmation, setRequireEndCallConfirmation] = useState(true);
+  const [template, setTemplate] = useState<"DEFAULT" | "WHATSAPP" | "TELEGRAM">("DEFAULT");
   
   const [pixelId, setPixelId] = useState("");
   const [pixelEvents, setPixelEvents] = useState<Record<string, string>>({
@@ -65,6 +66,7 @@ export default function CentersPage() {
       setEnforceUniqueExternalId(center.enforceUniqueExternalId);
       setAllowRetryIfNotCompleted(center.allowRetryIfNotCompleted);
       setRequireEndCallConfirmation(center.requireEndCallConfirmation ?? true);
+      setTemplate(center.template || "DEFAULT");
       setPixelId(center.pixelId || "");
       setTikTokPixelId(center.tikTokPixelId || "");
       setGooglePixelId(center.googlePixelId || "");
@@ -102,6 +104,7 @@ export default function CentersPage() {
       setEnforceUniqueExternalId(false);
       setAllowRetryIfNotCompleted(false);
       setRequireEndCallConfirmation(true);
+      setTemplate("DEFAULT");
       setPixelId("");
       setPixelEvents({ CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: "" });
       setTikTokPixelId("");
@@ -138,6 +141,7 @@ export default function CentersPage() {
       enforceUniqueExternalId,
       allowRetryIfNotCompleted,
       requireEndCallConfirmation,
+      template,
       pixelId,
       pixelEvents: JSON.stringify(pixelEvents),
       tikTokPixelId,
@@ -239,6 +243,20 @@ export default function CentersPage() {
                   {c.enforceUniqueExternalId ? (c.allowRetryIfNotCompleted ? "Com Exceção" : "Bloqueio Total") : "Desativado"}
                 </span>
               </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Modelo de Chamada:</span>
+                <span style={{ 
+                  fontWeight: 600, 
+                  fontSize: '0.75rem', 
+                  padding: '0.2rem 0.55rem', 
+                  borderRadius: '1rem',
+                  backgroundColor: c.template === 'WHATSAPP' ? 'rgba(37, 211, 102, 0.15)' : c.template === 'TELEGRAM' ? 'rgba(36, 129, 204, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                  color: c.template === 'WHATSAPP' ? '#25d366' : c.template === 'TELEGRAM' ? '#2481cc' : '#a5b4fc',
+                  border: `1px solid ${c.template === 'WHATSAPP' ? 'rgba(37, 211, 102, 0.3)' : c.template === 'TELEGRAM' ? 'rgba(36, 129, 204, 0.3)' : 'rgba(99, 102, 241, 0.3)'}`
+                }}>
+                  {c.template === 'WHATSAPP' ? 'WhatsApp' : c.template === 'TELEGRAM' ? 'Telegram' : 'App Padrão'}
+                </span>
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
@@ -304,6 +322,106 @@ export default function CentersPage() {
                       <option key={m.id} value={m.id}>{m.name}</option>
                     ))}
                   </select>
+                </div>
+
+                {/* Seletor de Modelo de Chamada */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ fontWeight: 600, fontSize: '0.95rem' }}>Modelo Visual da Chamada</label>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Define o tema, metadados e interface do cliente</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+                    {/* Opção: App Padrão */}
+                    <div 
+                      onClick={() => setTemplate("DEFAULT")}
+                      style={{
+                        cursor: 'pointer',
+                        padding: '1rem',
+                        borderRadius: '0.6rem',
+                        border: template === 'DEFAULT' ? '2px solid #6366f1' : '1px solid var(--border)',
+                        backgroundColor: template === 'DEFAULT' ? 'rgba(99, 102, 241, 0.08)' : 'rgba(255,255,255,0.02)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem',
+                        transition: 'all 0.2s ease',
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ width: 32, height: 32, borderRadius: '8px', background: 'linear-gradient(135deg, #6366f1, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                        </div>
+                        {template === 'DEFAULT' && (
+                          <span style={{ fontSize: '0.65rem', background: '#6366f1', color: '#fff', padding: '0.15rem 0.45rem', borderRadius: '1rem', fontWeight: 700 }}>PADRÃO</span>
+                        )}
+                      </div>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: template === 'DEFAULT' ? '#a5b4fc' : 'inherit' }}>App Padrão</h4>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>Visual corporativo neutro e independente.</p>
+                      </div>
+                    </div>
+
+                    {/* Opção: WhatsApp */}
+                    <div 
+                      onClick={() => setTemplate("WHATSAPP")}
+                      style={{
+                        cursor: 'pointer',
+                        padding: '1rem',
+                        borderRadius: '0.6rem',
+                        border: template === 'WHATSAPP' ? '2px solid #25d366' : '1px solid var(--border)',
+                        backgroundColor: template === 'WHATSAPP' ? 'rgba(37, 211, 102, 0.08)' : 'rgba(255,255,255,0.02)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem',
+                        transition: 'all 0.2s ease',
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ width: 32, height: 32, borderRadius: '8px', background: '#25d366', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.301-.15-1.78-.878-2.056-.978-.275-.1-.476-.15-.677.15-.201.3-.778.978-.953 1.179-.176.2-.351.226-.652.075-1.579-.79-2.613-1.408-3.66-3.208-.275-.473.275-.438.788-1.464.086-.175.043-.326-.022-.476-.065-.15-.677-1.632-.928-2.235-.245-.588-.493-.508-.677-.517h-.578c-.201 0-.527.075-.803.376-.275.3-1.054 1.03-1.054 2.512 0 1.482 1.079 2.912 1.23 3.113.15.2 2.124 3.243 5.147 4.549 2.087.903 2.879.897 3.91.744.629-.093 1.933-.79 2.207-1.554.275-.764.275-1.418.194-1.555-.081-.136-.282-.218-.583-.368z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.98-1.39A9.957 9.957 0 0 0 12 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18.2a8.17 8.17 0 0 1-4.17-1.134l-.3-.178-3.09.863.876-3.011-.196-.312A8.188 8.188 0 0 1 3.8 12c0-4.522 3.678-8.2 8.2-8.2 4.521 0 8.2 3.678 8.2 8.2 0 4.522-3.679 8.2-8.2 8.2z"/></svg>
+                        </div>
+                        {template === 'WHATSAPP' && (
+                          <span style={{ fontSize: '0.65rem', background: '#25d366', color: '#000', padding: '0.15rem 0.45rem', borderRadius: '1rem', fontWeight: 800 }}>ATIVO</span>
+                        )}
+                      </div>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: template === 'WHATSAPP' ? '#25d366' : 'inherit' }}>WhatsApp</h4>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>Simulação fiel de chamada WhatsApp.</p>
+                      </div>
+                    </div>
+
+                    {/* Opção: Telegram */}
+                    <div 
+                      onClick={() => setTemplate("TELEGRAM")}
+                      style={{
+                        cursor: 'pointer',
+                        padding: '1rem',
+                        borderRadius: '0.6rem',
+                        border: template === 'TELEGRAM' ? '2px solid #2481cc' : '1px solid var(--border)',
+                        backgroundColor: template === 'TELEGRAM' ? 'rgba(36, 129, 204, 0.08)' : 'rgba(255,255,255,0.02)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem',
+                        transition: 'all 0.2s ease',
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ width: 32, height: 32, borderRadius: '8px', background: '#2481cc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.93 6.66l-1.68 7.93c-.13.58-.47.72-.95.45l-2.62-1.93-1.26 1.22c-.14.14-.26.26-.53.26l.19-2.66 4.84-4.37c.21-.19-.05-.29-.32-.1L7.78 14.3 5.2 13.5c-.56-.18-.57-.56.12-.83l9.4-3.62c.47-.17.88.11.71.83l.5-.72z"/></svg>
+                        </div>
+                        {template === 'TELEGRAM' && (
+                          <span style={{ fontSize: '0.65rem', background: '#2481cc', color: '#fff', padding: '0.15rem 0.45rem', borderRadius: '1rem', fontWeight: 800 }}>ATIVO</span>
+                        )}
+                      </div>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: template === 'TELEGRAM' ? '#38bdf8' : 'inherit' }}>Telegram</h4>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.3 }}>Simulação hiper-realista Telegram.</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border)', padding: '1rem', borderRadius: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>

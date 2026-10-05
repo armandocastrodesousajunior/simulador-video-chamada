@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { runThrottledCleanup } from "@/lib/cleanup";
 
 export async function GET(req: NextRequest) {
   try {
+    // Aciona verificação periódica de limpeza de logs em background
+    runThrottledCleanup().catch(() => {});
+
     const searchParams = req.nextUrl.searchParams;
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");

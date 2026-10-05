@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { name, displayName, avatar, webhookUrl, mediaId, enforceUniqueExternalId, allowRetryIfNotCompleted, pixelId, pixelEvents, requireEndCallConfirmation, tikTokPixelId, tikTokEvents, googlePixelId, googleEvents, kwaiPixelId, kwaiEvents } = body;
+    const { name, displayName, avatar, webhookUrl, mediaId, enforceUniqueExternalId, allowRetryIfNotCompleted, pixelId, pixelEvents, requireEndCallConfirmation, template, tikTokPixelId, tikTokEvents, googlePixelId, googleEvents, kwaiPixelId, kwaiEvents } = body;
 
     if (!name || !displayName || !mediaId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
         enforceUniqueExternalId: enforceUniqueExternalId || false,
         allowRetryIfNotCompleted: allowRetryIfNotCompleted || false,
         requireEndCallConfirmation: requireEndCallConfirmation !== undefined ? requireEndCallConfirmation : true,
+        template: template || "DEFAULT",
         pixelId: pixelId || null,
         pixelEvents: pixelEvents || null,
         tikTokPixelId: tikTokPixelId || null,

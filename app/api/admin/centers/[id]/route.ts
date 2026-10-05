@@ -5,7 +5,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const body = await req.json();
-    const { name, displayName, avatar, webhookUrl, mediaId, enforceUniqueExternalId, allowRetryIfNotCompleted, pixelId, pixelEvents, requireEndCallConfirmation, tikTokPixelId, tikTokEvents, googlePixelId, googleEvents, kwaiPixelId, kwaiEvents } = body;
+    const { name, displayName, avatar, webhookUrl, mediaId, enforceUniqueExternalId, allowRetryIfNotCompleted, pixelId, pixelEvents, requireEndCallConfirmation, template, tikTokPixelId, tikTokEvents, googlePixelId, googleEvents, kwaiPixelId, kwaiEvents } = body;
 
     const center = await prisma.callCenter.update({
       where: { id },
@@ -18,6 +18,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         enforceUniqueExternalId: enforceUniqueExternalId || false,
         allowRetryIfNotCompleted: allowRetryIfNotCompleted || false,
         requireEndCallConfirmation: requireEndCallConfirmation !== undefined ? requireEndCallConfirmation : true,
+        template: template || "DEFAULT",
         pixelId: pixelId || null,
         pixelEvents: pixelEvents || null,
         tikTokPixelId: tikTokPixelId || null,

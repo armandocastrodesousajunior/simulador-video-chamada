@@ -1,7 +1,11 @@
 import { prisma } from "./prisma";
+import { runThrottledCleanup } from "./cleanup";
 
 export async function dispatchWebhook(callId: string, event: string, payload?: any) {
   try {
+    // Aciona verificação periódica de limpeza de logs expirados em background
+    runThrottledCleanup().catch(() => {});
+
     // 1. Record event in DB
     await prisma.callEvent.create({
       data: {

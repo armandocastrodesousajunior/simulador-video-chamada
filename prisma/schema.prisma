@@ -26,6 +26,7 @@ model CallCenter {
   enforceUniqueExternalId  Boolean  @default(false)
   allowRetryIfNotCompleted Boolean  @default(false)
   requireEndCallConfirmation Boolean @default(true)
+  template                 String   @default("DEFAULT") // DEFAULT, WHATSAPP, TELEGRAM
   createdAt                DateTime @default(now())
   
   pixelId                  String?
