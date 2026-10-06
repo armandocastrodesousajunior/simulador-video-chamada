@@ -702,7 +702,7 @@ export default function CallPage() {
 
         {/* Avatar + Caller Info */}
         <div className={styles.incomingCenter}>
-          <div className={`${styles.avatarWrapper} ${!isWpp && !isTg ? styles.defaultAvatarRing : ""}`}>
+          <div className={styles.avatarWrapper}>
             <div className={styles.pulseRing} style={{ borderColor: isWpp ? 'rgba(37, 211, 102, 0.4)' : isTg ? 'rgba(36, 129, 204, 0.4)' : 'rgba(99, 102, 241, 0.4)' }} />
             <div className={styles.pulseRing} style={{ borderColor: isWpp ? 'rgba(37, 211, 102, 0.3)' : isTg ? 'rgba(36, 129, 204, 0.3)' : 'rgba(99, 102, 241, 0.3)' }} />
             <div className={styles.pulseRing} style={{ borderColor: isWpp ? 'rgba(37, 211, 102, 0.2)' : isTg ? 'rgba(36, 129, 204, 0.2)' : 'rgba(99, 102, 241, 0.2)' }} />
@@ -710,10 +710,10 @@ export default function CallPage() {
               <img
                 src={avatarUrl}
                 alt={displayName}
-                className={styles.avatarImg}
+                className={`${styles.avatarImg} ${!isWpp && !isTg ? styles.defaultAvatarImg : ""}`}
               />
             ) : (
-              <div className={styles.avatarInitials}>
+              <div className={`${styles.avatarInitials} ${!isWpp && !isTg ? styles.defaultAvatarImg : ""}`}>
                 {getInitials(displayName)}
               </div>
             )}
