@@ -66,9 +66,25 @@ const IconSpeaker = () => (
 );
 
 const IconCameraOff = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"/>
     <line x1="1" y1="1" x2="23" y2="23"/>
+  </svg>
+);
+
+const IconCameraOn = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M23 7l-7 5 7 5V7z" />
+    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+  </svg>
+);
+
+const IconExpandSwap = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 3 21 3 21 9"/>
+    <polyline points="9 21 3 21 3 15"/>
+    <line x1="21" y1="3" x2="14" y2="10"/>
+    <line x1="3" y1="21" x2="10" y2="14"/>
   </svg>
 );
 
@@ -180,6 +196,21 @@ export default function CallPage() {
   };
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+
+  // Estados da Câmera do Usuário & Miniatura Arrastável / Invertível
+  const [userCameraActive, setUserCameraActive] = useState(false);
+  const [userCameraLoading, setUserCameraLoading] = useState(false);
+  const [isSwapped, setIsSwapped] = useState(false);
+  const [pipPos, setPipPos] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const isDraggingRef = useRef(false);
+  const dragStartPosRef = useRef({ x: 0, y: 0 });
+  const dragStartPointerRef = useRef({ x: 0, y: 0 });
+  const hasMovedRef = useRef(false);
+
   const startTimeRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -443,17 +474,200 @@ export default function CallPage() {
     }
   }, []);
 
-  const handleDecline = useCallback(() => {
-    setStatus("CLOSED");
-    updateCallStatus("REJECTED");
+  // ── Controle da Câmera do Usuário ───────────────────────
+  const stopUserCamera = useCallback(() => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch {}
+      });
+      localStreamRef.current = null;
+    }
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null;
+    }
+    setUserCameraActive(false);
   }, []);
 
+  const startUserCamera = useCallback(async () => {
+    setUserCameraLoading(true);
+    try {
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        showToast("Seu navegador não suporta acesso à câmera.", "📷");
+        setUserCameraLoading(false);
+        return;
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      });
+
+      localStreamRef.current = stream;
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+        localVideoRef.current.muted = true;
+        localVideoRef.current.play().catch(() => {});
+      }
+      setUserCameraActive(true);
+      showToast("Câmera ativada com sucesso", "📷");
+    } catch (err: any) {
+      console.error("Erro ao acessar câmera:", err);
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        showToast("Permissão de câmera negada no navegador.", "📷");
+      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+        showToast("Nenhuma câmera encontrada no dispositivo.", "📷");
+      } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+        showToast("A câmera já está sendo usada por outro app.", "📷");
+      } else {
+        showToast("Não foi possível acessar a câmera do aparelho.", "📷");
+      }
+      setUserCameraActive(false);
+    } finally {
+      setUserCameraLoading(false);
+    }
+  }, []);
+
+  const handleToggleCamera = useCallback(() => {
+    if (userCameraActive) {
+      stopUserCamera();
+      showToast("Câmera desativada", "📷");
+    } else {
+      startUserCamera();
+    }
+  }, [userCameraActive, stopUserCamera, startUserCamera]);
+
+  // Limpeza da câmera no unmount
+  useEffect(() => {
+    return () => {
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((track) => {
+          try {
+            track.stop();
+          } catch {}
+        });
+        localStreamRef.current = null;
+      }
+    };
+  }, []);
+
+  // Reconectar stream caso haja re-render ou troca de modo
+  useEffect(() => {
+    if (localVideoRef.current && localStreamRef.current && userCameraActive) {
+      localVideoRef.current.srcObject = localStreamRef.current;
+      localVideoRef.current.muted = true;
+      localVideoRef.current.play().catch(() => {});
+    }
+  }, [userCameraActive, isSwapped]);
+
+  // ── Dimensões & Posicionamento da Miniatura (PiP) ────────
+  const getPipBounds = useCallback(() => {
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+    const pipW = isMobile ? 96 : 114;
+    const pipH = isMobile ? 140 : 165;
+    const minX = 12;
+    const maxX = Math.max(minX, (typeof window !== "undefined" ? window.innerWidth : 400) - pipW - 12);
+    const minY = 65;
+    const maxY = Math.max(minY, (typeof window !== "undefined" ? window.innerHeight : 800) - pipH - 100);
+    return { pipW, pipH, minX, maxX, minY, maxY };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const { maxX } = getPipBounds();
+      setPipPos({ x: maxX, y: 84 });
+
+      const handleResize = () => {
+        setPipPos((prev) => {
+          if (!prev) return null;
+          const { minX, maxX, minY, maxY } = getPipBounds();
+          return {
+            x: Math.min(maxX, Math.max(minX, prev.x)),
+            y: Math.min(maxY, Math.max(minY, prev.y)),
+          };
+        });
+      };
+
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }
+  }, [getPipBounds]);
+
+  const handleToggleSwap = useCallback(() => {
+    setIsSwapped((prev) => !prev);
+  }, []);
+
+  const handlePipPointerDown = useCallback((e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {}
+
+    isDraggingRef.current = true;
+    hasMovedRef.current = false;
+    setIsDragging(true);
+    dragStartPointerRef.current = { x: e.clientX, y: e.clientY };
+
+    const { maxX } = getPipBounds();
+    const currentPos = pipPos || { x: maxX, y: 84 };
+    dragStartPosRef.current = currentPos;
+  }, [pipPos, getPipBounds]);
+
+  const handlePipPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+
+    const deltaX = e.clientX - dragStartPointerRef.current.x;
+    const deltaY = e.clientY - dragStartPointerRef.current.y;
+
+    if (Math.hypot(deltaX, deltaY) > 5) {
+      hasMovedRef.current = true;
+    }
+
+    const { minX, maxX, minY, maxY } = getPipBounds();
+    const newX = Math.min(maxX, Math.max(minX, dragStartPosRef.current.x + deltaX));
+    const newY = Math.min(maxY, Math.max(minY, dragStartPosRef.current.y + deltaY));
+
+    setPipPos({ x: newX, y: newY });
+  }, [getPipBounds]);
+
+  const handlePipPointerUp = useCallback((e: React.PointerEvent) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    setIsDragging(false);
+    try {
+      (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {}
+
+    if (!hasMovedRef.current) {
+      handleToggleSwap();
+    } else {
+      const { pipW, minX, maxX } = getPipBounds();
+      setPipPos((prev) => {
+        if (!prev) return null;
+        const snapTarget = prev.x < (window.innerWidth - pipW) / 2 ? minX : maxX;
+        return { x: snapTarget, y: prev.y };
+      });
+    }
+  }, [getPipBounds, handleToggleSwap]);
+
+  const handleDecline = useCallback(() => {
+    stopUserCamera();
+    setStatus("CLOSED");
+    updateCallStatus("REJECTED");
+  }, [stopUserCamera]);
+
   const handleVideoEnded = useCallback(() => {
+    stopUserCamera();
     setCallActive(false);
     setStatus("CLOSED");
     const dur = videoRef.current?.duration;
     updateCallStatus("COMPLETED", calculateWatchTime(), dur ? Math.round(dur) : undefined);
-  }, []);
+  }, [stopUserCamera]);
 
   // ── Timer Modal Confirmação ──────────────────────────
   useEffect(() => {
@@ -467,13 +681,14 @@ export default function CallPage() {
   }, [showEndModal, endModalTimer]);
 
   const handleEndCall = useCallback(() => {
+    stopUserCamera();
     setCallActive(false);
     setShowEndModal(false);
     setStatus("CLOSED");
     if (videoRef.current) videoRef.current.pause();
     const dur = videoRef.current?.duration;
     updateCallStatus("ABANDONED", calculateWatchTime(), dur ? Math.round(dur) : undefined);
-  }, []);
+  }, [stopUserCamera]);
 
   const handleEndCallClick = useCallback(() => {
     if (callData?.callCenter?.requireEndCallConfirmation) {
@@ -494,10 +709,6 @@ export default function CallPage() {
 
   const handleToggleMic = useCallback(() => {
     setMicMuted(prev => !prev);
-  }, []);
-
-  const handleCameraClick = useCallback(() => {
-    showToast("Não foi possível localizar a câmera do dispositivo.", "📷");
   }, []);
 
   const handleShareClick = useCallback(() => {
@@ -791,15 +1002,147 @@ export default function CallPage() {
 
   return (
     <div className={styles.activeScreen}>
-      {/* Vídeo em tela cheia */}
-      <video
-        ref={videoRef}
-        src={callData?.media?.url}
-        className={styles.activeVideo}
-        playsInline
-        autoPlay
-        onEnded={handleVideoEnded}
-      />
+      {/* ── Camada 1: Vídeo da Chamada (Remoto) ── */}
+      <div
+        className={`${!isSwapped ? styles.mainLayer : styles.pipLayer} ${
+          isSwapped 
+            ? (isWppActive ? styles.pipLayerWhatsApp : isTgActive ? styles.pipLayerTelegram : styles.pipLayerDefault)
+            : ""
+        }`}
+        style={isSwapped && pipPos ? {
+          left: `${pipPos.x}px`,
+          top: `${pipPos.y}px`,
+          right: 'auto',
+          transition: isDragging ? 'none' : 'left 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), top 0.25s cubic-bezier(0.2, 0.9, 0.3, 1)',
+        } : undefined}
+        onPointerDown={isSwapped ? handlePipPointerDown : undefined}
+        onPointerMove={isSwapped ? handlePipPointerMove : undefined}
+        onPointerUp={isSwapped ? handlePipPointerUp : undefined}
+        onPointerCancel={isSwapped ? handlePipPointerUp : undefined}
+      >
+        <video
+          ref={videoRef}
+          src={callData?.media?.url}
+          className={!isSwapped ? styles.mainVideo : styles.pipVideo}
+          playsInline
+          autoPlay
+          onEnded={handleVideoEnded}
+        />
+
+        {/* Overlay quando o vídeo remoto estiver na miniatura (PiP) */}
+        {isSwapped && (
+          <div className={styles.pipOverlay}>
+            <div className={styles.pipTopRow}>
+              <span className={styles.pipLabel}>{displayName}</span>
+              <button
+                className={styles.pipSwapBtn}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); handleToggleSwap(); }}
+                aria-label="Expandir vídeo da chamada"
+                title="Expandir vídeo"
+              >
+                <IconExpandSwap />
+              </button>
+            </div>
+            <span className={styles.pipBottomHint}>Toque p/ expandir</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Camada 2: Câmera do Usuário (Local) ── */}
+      <div
+        className={`${isSwapped ? styles.mainLayer : styles.pipLayer} ${
+          !isSwapped 
+            ? (isWppActive ? styles.pipLayerWhatsApp : isTgActive ? styles.pipLayerTelegram : styles.pipLayerDefault)
+            : ""
+        }`}
+        style={!isSwapped && pipPos ? {
+          left: `${pipPos.x}px`,
+          top: `${pipPos.y}px`,
+          right: 'auto',
+          transition: isDragging ? 'none' : 'left 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), top 0.25s cubic-bezier(0.2, 0.9, 0.3, 1)',
+        } : undefined}
+        onPointerDown={!isSwapped ? handlePipPointerDown : undefined}
+        onPointerMove={!isSwapped ? handlePipPointerMove : undefined}
+        onPointerUp={!isSwapped ? handlePipPointerUp : undefined}
+        onPointerCancel={!isSwapped ? handlePipPointerUp : undefined}
+      >
+        <video
+          ref={localVideoRef}
+          className={`${isSwapped ? styles.mainVideo : styles.pipVideo} ${styles.localMirrorVideo}`}
+          playsInline
+          autoPlay
+          muted
+          style={{ display: userCameraActive ? "block" : "none" }}
+        />
+
+        {/* Estado com câmera desligada */}
+        {!userCameraActive && (
+          isSwapped ? (
+            <div className={styles.mainCameraOffScreen}>
+              <div className={styles.mainCameraOffCard}>
+                <div className={styles.mainCameraOffIconBig}>
+                  <IconCameraOff />
+                </div>
+                <h3 className={styles.mainCameraOffTitle}>Sua câmera está desligada</h3>
+                <p className={styles.mainCameraOffSub}>
+                  Ative sua câmera para que você apareça na videochamada.
+                </p>
+                <button
+                  className={styles.mainCameraOffActionBtn}
+                  onClick={startUserCamera}
+                >
+                  Ligar Câmera Agora
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.pipCameraOffBox}>
+              {userCameraLoading ? (
+                <div className={styles.pipSpinner} />
+              ) : (
+                <>
+                  <div className={styles.pipCameraOffIconWrap}>
+                    <IconCameraOff />
+                  </div>
+                  <span className={styles.pipCameraOffText}>Câmera desligada</span>
+                  <button
+                    className={styles.pipTurnOnBtn}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startUserCamera();
+                    }}
+                  >
+                    Ligar
+                  </button>
+                </>
+              )}
+            </div>
+          )
+        )}
+
+        {/* Overlay quando a câmera local estiver na miniatura (PiP) */}
+        {!isSwapped && (
+          <div className={styles.pipOverlay}>
+            <div className={styles.pipTopRow}>
+              <span className={styles.pipLabel}>Você</span>
+              <button
+                className={styles.pipSwapBtn}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); handleToggleSwap(); }}
+                aria-label="Expandir sua câmera"
+                title="Expandir câmera"
+              >
+                <IconExpandSwap />
+              </button>
+            </div>
+            {userCameraActive && (
+              <span className={styles.pipBottomHint}>Toque p/ expandir</span>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Vinheta superior */}
       <div className={styles.topVignette} />
@@ -844,11 +1187,6 @@ export default function CallPage() {
         </div>
       </div>
 
-      {/* Self-View PIP decorativo */}
-      <div className={styles.selfViewPip}>
-        <IconCameraOff />
-      </div>
-
       {/* Vinheta inferior */}
       <div className={styles.bottomVignette} />
 
@@ -874,10 +1212,18 @@ export default function CallPage() {
             <span className={styles.ctrlBtnLabel}>{speakerMuted ? "Silenciado" : "Alto-fal."}</span>
           </button>
 
-          {/* Câmera — mostra toast de erro */}
-          <button className={styles.ctrlBtn} onClick={handleCameraClick} aria-label="Câmera">
-            <div className={styles.ctrlBtnCircle}>
-              <IconCameraOff />
+          {/* Câmera — Ligar/Desligar webcam do usuário */}
+          <button 
+            className={styles.ctrlBtn} 
+            onClick={handleToggleCamera} 
+            aria-label={userCameraActive ? "Desligar câmera" : "Ligar câmera"}
+          >
+            <div className={`${styles.ctrlBtnCircle} ${
+              userCameraActive 
+                ? (isWppActive ? styles.waCameraActive : isTgActive ? styles.tgCameraActive : styles.defaultCameraActive)
+                : ""
+            }`}>
+              {userCameraActive ? <IconCameraOn /> : <IconCameraOff />}
             </div>
             <span className={styles.ctrlBtnLabel}>Câmera</span>
           </button>
