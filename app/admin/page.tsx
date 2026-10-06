@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { reconcileStaleCalls } from "@/lib/callPresence";
 import DashboardCharts from "./DashboardCharts";
 import AllCallsModal from "./components/AllCallsModal";
 import { formatDistanceToNow } from "date-fns";
@@ -8,6 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   try {
+    await reconcileStaleCalls();
     const centers = await prisma.callCenter.count();
     const totalCalls = await prisma.call.count();
     

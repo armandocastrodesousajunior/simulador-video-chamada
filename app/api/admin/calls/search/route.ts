@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { runThrottledCleanup } from "@/lib/cleanup";
+import { reconcileStaleCalls } from "@/lib/callPresence";
 
 export async function GET(req: NextRequest) {
   try {
+    // Reconcilia chamadas estagnadas/abandonadas por inatividade
+    await reconcileStaleCalls();
+
     // Aciona verificação periódica de limpeza de logs em background
     runThrottledCleanup().catch(() => {});
 

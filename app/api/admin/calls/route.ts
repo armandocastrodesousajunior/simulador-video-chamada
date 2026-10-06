@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { dispatchWebhook } from "@/lib/webhook";
+import { reconcileStaleCalls } from "@/lib/callPresence";
 
 export async function GET() {
   try {
+    await reconcileStaleCalls();
     const calls = await prisma.call.findMany({
       include: {
         callCenter: {

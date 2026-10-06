@@ -59,6 +59,21 @@ export default function CallsPage() {
 
   useEffect(() => {
     loadCalls();
+
+    const interval = setInterval(() => {
+      fetch(`/api/admin/calls/search?page=${page}&limit=${limit}&search=${encodeURIComponent(debouncedSearch)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.data) {
+            setCalls(data.data);
+            setTotalPages(data.meta.totalPages);
+            setTotal(data.meta.total);
+          }
+        })
+        .catch(() => {});
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [page, debouncedSearch]);
 
   const handleCreateCall = async (e: React.FormEvent) => {

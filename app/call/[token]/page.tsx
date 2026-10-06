@@ -219,6 +219,8 @@ export default function CallPage() {
 
   const startTimeRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const callActiveRef = useRef(false);
+  const hasEndedRef = useRef(false);
 
   // ── Carregar dados da chamada ──────────────────────────
   useEffect(() => {
@@ -364,7 +366,105 @@ export default function CallPage() {
       });
   }, [token]);
 
-  // Listener removido a pedido do usuário (para permitir reacesso sem abandonar)
+  // Sincroniza callActive com ref para acesso seguro em event listeners
+  useEffect(() => {
+    callActiveRef.current = callActive;
+  }, [callActive]);
+
+  // Função para obter tempo assistido preciso do vídeo
+  const getExactWatchTime = useCallback(() => {
+    if (videoRef.current && typeof videoRef.current.currentTime === "number" && videoRef.current.currentTime > 0) {
+      return Math.floor(videoRef.current.currentTime);
+    }
+    if (startTimeRef.current > 0) {
+      return Math.floor((Date.now() - startTimeRef.current) / 1000);
+    }
+    return 0;
+  }, []);
+
+  // Beacon disparado caso o usuário feche a aba / navegador
+  const sendAbandonBeacon = useCallback(() => {
+    if (!callActiveRef.current || hasEndedRef.current) return;
+    hasEndedRef.current = true;
+    callActiveRef.current = false;
+
+    const currentWatchTime = getExactWatchTime();
+    const dur = videoRef.current?.duration ? Math.round(videoRef.current.duration) : undefined;
+
+    const payload = JSON.stringify({
+      status: "ABANDONED",
+      watchTime: currentWatchTime,
+      mediaDuration: dur,
+    });
+
+    const url = `/api/calls/${token}`;
+    let sent = false;
+
+    if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+      try {
+        const blob = new Blob([payload], { type: "application/json" });
+        sent = navigator.sendBeacon(url, blob);
+      } catch (e) {}
+    }
+
+    if (!sent) {
+      try {
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: payload,
+          keepalive: true,
+        }).catch(() => {});
+      } catch (e) {}
+    }
+  }, [token, getExactWatchTime]);
+
+  // Escuta fechamento de aba / mudança de página (Mobile Safari/Chrome e Desktop)
+  useEffect(() => {
+    const handleExit = () => {
+      if (callActiveRef.current && !hasEndedRef.current) {
+        sendAbandonBeacon();
+      }
+    };
+
+    window.addEventListener("pagehide", handleExit);
+    window.addEventListener("beforeunload", handleExit);
+
+    return () => {
+      window.removeEventListener("pagehide", handleExit);
+      window.removeEventListener("beforeunload", handleExit);
+    };
+  }, [sendAbandonBeacon]);
+
+  // Heartbeat periódico a cada 3 segundos enquanto a chamada estiver ativa
+  useEffect(() => {
+    if (!callActive) return;
+
+    const sendHeartbeat = () => {
+      if (!callActiveRef.current || hasEndedRef.current) return;
+      const currentSec = getExactWatchTime();
+      const dur = videoRef.current?.duration ? Math.round(videoRef.current.duration) : undefined;
+
+      fetch(`/api/calls/${token}/heartbeat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          watchTime: currentSec,
+          mediaDuration: dur,
+        }),
+      }).catch(() => {});
+    };
+
+    // Primeiro heartbeat rápido em 1.5s para registrar início imediato
+    const initialTimer = setTimeout(sendHeartbeat, 1500);
+    const intervalTimer = setInterval(sendHeartbeat, 3000);
+
+    return () => {
+      clearTimeout(initialTimer);
+      clearInterval(intervalTimer);
+    };
+  }, [callActive, token, getExactWatchTime]);
+
 
   // ── Timer crescente (ACTIVE) ───────────────────────────
   useEffect(() => {
@@ -475,6 +575,8 @@ export default function CallPage() {
   const handleAnswer = useCallback(() => {
     setStatus("ACTIVE");
     setCallActive(true);
+    callActiveRef.current = true;
+    hasEndedRef.current = false;
     setElapsed(0);
     startTimeRef.current = Date.now();
     updateCallStatus("STARTED");
@@ -786,6 +888,8 @@ export default function CallPage() {
   }, [stopAudioEcho]);
 
   const handleDecline = useCallback(() => {
+    hasEndedRef.current = true;
+    callActiveRef.current = false;
     stopUserCamera();
     stopAudioEcho();
     setStatus("CLOSED");
@@ -793,13 +897,15 @@ export default function CallPage() {
   }, [stopUserCamera, stopAudioEcho]);
 
   const handleVideoEnded = useCallback(() => {
+    hasEndedRef.current = true;
+    callActiveRef.current = false;
     stopUserCamera();
     stopAudioEcho();
     setCallActive(false);
     setStatus("CLOSED");
     const dur = videoRef.current?.duration;
-    updateCallStatus("COMPLETED", calculateWatchTime(), dur ? Math.round(dur) : undefined);
-  }, [stopUserCamera, stopAudioEcho]);
+    updateCallStatus("COMPLETED", getExactWatchTime(), dur ? Math.round(dur) : undefined);
+  }, [stopUserCamera, stopAudioEcho, getExactWatchTime]);
 
   // ── Timer Modal Confirmação ──────────────────────────
   useEffect(() => {
@@ -813,6 +919,8 @@ export default function CallPage() {
   }, [showEndModal, endModalTimer]);
 
   const handleEndCall = useCallback(() => {
+    hasEndedRef.current = true;
+    callActiveRef.current = false;
     stopUserCamera();
     stopAudioEcho();
     setCallActive(false);
@@ -820,8 +928,8 @@ export default function CallPage() {
     setStatus("CLOSED");
     if (videoRef.current) videoRef.current.pause();
     const dur = videoRef.current?.duration;
-    updateCallStatus("ABANDONED", calculateWatchTime(), dur ? Math.round(dur) : undefined);
-  }, [stopUserCamera, stopAudioEcho]);
+    updateCallStatus("ABANDONED", getExactWatchTime(), dur ? Math.round(dur) : undefined);
+  }, [stopUserCamera, stopAudioEcho, getExactWatchTime]);
 
   const handleEndCallClick = useCallback(() => {
     if (callData?.callCenter?.requireEndCallConfirmation) {
