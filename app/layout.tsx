@@ -4,6 +4,13 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Simulated Video Calls",
   description: "Plataforma de videochamadas simuladas",
+  icons: {
+    icon: [
+      { url: "/favicons/default.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/favicons/default.svg",
+    apple: "/favicons/default.svg",
+  },
 };
 
 export const viewport: Viewport = {

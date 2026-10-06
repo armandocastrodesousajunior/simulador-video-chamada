@@ -49,7 +49,7 @@ const IconAccept = () => (
 );
 
 const IconMic = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
     <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
     <line x1="12" y1="19" x2="12" y2="23"/>
@@ -107,7 +107,7 @@ const IconSpeakerMuted = () => (
 );
 
 const IconMicMuted = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="1" y1="1" x2="23" y2="23"/>
     <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/>
     <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/>
@@ -199,6 +199,12 @@ export default function CallPage() {
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
 
+  // Estados e Refs do Microfone e Mecanismo de Eco (Client-Side)
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const [micActive, setMicActive] = useState(false);
+  const [micLoading, setMicLoading] = useState(false);
+
   // Estados da Câmera do Usuário & Miniatura Arrastável / Invertível
   const [userCameraActive, setUserCameraActive] = useState(false);
   const [userCameraLoading, setUserCameraLoading] = useState(false);
@@ -224,6 +230,9 @@ export default function CallPage() {
           return;
         }
         setCallData(data);
+        if (data.callCenter?.enableAudioEcho) {
+          setMicMuted(true);
+        }
         
         // Inicializa o Pixel imediatamente se existir na central
         if (data.callCenter?.pixelId) {
@@ -655,19 +664,142 @@ export default function CallPage() {
     }
   }, [getPipBounds, handleToggleSwap]);
 
+  // ── Mecanismo de Eco no Microfone (Client-Side) ─────────
+  const stopAudioEcho = useCallback(() => {
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch {}
+      });
+      micStreamRef.current = null;
+    }
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.close();
+      } catch {}
+      audioContextRef.current = null;
+    }
+    setMicActive(false);
+    setMicMuted(true);
+  }, []);
+
+  const startAudioEcho = useCallback(async () => {
+    setMicLoading(true);
+    try {
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        showToast("Navegador não suporta acesso ao microfone.", "🎙️");
+        setMicLoading(false);
+        return;
+      }
+
+      // Captura o microfone sem cancelamento de eco nativo do navegador
+      // para permitir que o reflexo acústico seja gerado intencionalmente
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: true,
+        },
+      });
+
+      micStreamRef.current = stream;
+
+      // Web Audio API 100% no cliente (0 bytes enviados ao servidor)
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioCtx();
+      audioContextRef.current = ctx;
+
+      if (ctx.state === "suspended") {
+        await ctx.resume();
+      }
+
+      const source = ctx.createMediaStreamSource(stream);
+
+      // 1. Filtro Passa-Altas (180Hz) para cortar ruído mecânico do microfone
+      const highPass = ctx.createBiquadFilter();
+      highPass.type = "highpass";
+      highPass.frequency.value = 180;
+
+      // 2. Filtro Passa-Baixas (2800Hz) para abafar agudos e soar como reflexo de sala / viva-voz
+      const lowPass = ctx.createBiquadFilter();
+      lowPass.type = "lowpass";
+      lowPass.frequency.value = 2800;
+      lowPass.Q.value = 1.0;
+
+      // 3. Delay de ~210ms (tempo acústico natural de retorno VoIP em chamadas)
+      const delay = ctx.createDelay(1.0);
+      delay.delayTime.value = 0.21;
+
+      // 4. Feedback sutil (18%) para gerar a segunda reflexão natural que decai rápido
+      const feedback = ctx.createGain();
+      feedback.gain.value = 0.18;
+
+      // 5. Volume do eco (38% da voz, sutil e natural)
+      const echoGain = ctx.createGain();
+      echoGain.gain.value = 0.38;
+
+      // 6. Compressor para amaciar a dinâmica e evitar estridência
+      const compressor = ctx.createDynamicsCompressor();
+      compressor.threshold.value = -24;
+      compressor.knee.value = 30;
+      compressor.ratio.value = 4;
+      compressor.attack.value = 0.003;
+      compressor.release.value = 0.25;
+
+      // Conexões do Grafo de Áudio:
+      source.connect(highPass);
+      highPass.connect(lowPass);
+      lowPass.connect(delay);
+
+      delay.connect(feedback);
+      feedback.connect(delay);
+
+      delay.connect(echoGain);
+      echoGain.connect(compressor);
+      compressor.connect(ctx.destination);
+
+      setMicActive(true);
+      setMicMuted(false);
+      showToast("Microfone ativado", "🎙️");
+    } catch (err: any) {
+      console.error("Erro ao ativar microfone:", err);
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        showToast("Permissão de microfone negada no navegador.", "🎙️");
+      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+        showToast("Nenhum microfone encontrado no aparelho.", "🎙️");
+      } else {
+        showToast("Não foi possível acessar o microfone.", "🎙️");
+      }
+      setMicActive(false);
+      setMicMuted(true);
+    } finally {
+      setMicLoading(false);
+    }
+  }, []);
+
+  // Limpeza do áudio no unmount
+  useEffect(() => {
+    return () => {
+      stopAudioEcho();
+    };
+  }, [stopAudioEcho]);
+
   const handleDecline = useCallback(() => {
     stopUserCamera();
+    stopAudioEcho();
     setStatus("CLOSED");
     updateCallStatus("REJECTED");
-  }, [stopUserCamera]);
+  }, [stopUserCamera, stopAudioEcho]);
 
   const handleVideoEnded = useCallback(() => {
     stopUserCamera();
+    stopAudioEcho();
     setCallActive(false);
     setStatus("CLOSED");
     const dur = videoRef.current?.duration;
     updateCallStatus("COMPLETED", calculateWatchTime(), dur ? Math.round(dur) : undefined);
-  }, [stopUserCamera]);
+  }, [stopUserCamera, stopAudioEcho]);
 
   // ── Timer Modal Confirmação ──────────────────────────
   useEffect(() => {
@@ -682,13 +814,14 @@ export default function CallPage() {
 
   const handleEndCall = useCallback(() => {
     stopUserCamera();
+    stopAudioEcho();
     setCallActive(false);
     setShowEndModal(false);
     setStatus("CLOSED");
     if (videoRef.current) videoRef.current.pause();
     const dur = videoRef.current?.duration;
     updateCallStatus("ABANDONED", calculateWatchTime(), dur ? Math.round(dur) : undefined);
-  }, [stopUserCamera]);
+  }, [stopUserCamera, stopAudioEcho]);
 
   const handleEndCallClick = useCallback(() => {
     if (callData?.callCenter?.requireEndCallConfirmation) {
@@ -708,8 +841,18 @@ export default function CallPage() {
   }, []);
 
   const handleToggleMic = useCallback(() => {
-    setMicMuted(prev => !prev);
-  }, []);
+    const isEchoEnabled = callData?.callCenter?.enableAudioEcho;
+    if (isEchoEnabled) {
+      if (micActive) {
+        stopAudioEcho();
+        showToast("Microfone silenciado", "🎙️");
+      } else {
+        startAudioEcho();
+      }
+    } else {
+      setMicMuted(prev => !prev);
+    }
+  }, [callData, micActive, stopAudioEcho, startAudioEcho]);
 
   const handleShareClick = useCallback(() => {
     showToast("Não foi possível localizar telas disponíveis para compartilhamento.", "💻");
@@ -742,6 +885,34 @@ export default function CallPage() {
   const template = callData?.callCenter?.template || "DEFAULT";
   const isWpp = template === "WHATSAPP";
   const isTg = template === "TELEGRAM";
+
+  // ── Atualização Dinâmica do Favicon no Navegador ───────
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      const faviconUrl = isWpp 
+        ? "/favicons/whatsapp.svg" 
+        : isTg 
+        ? "/favicons/telegram.svg" 
+        : "/favicons/default.svg";
+
+      let link = document.querySelector("link[rel*='icon']") as HTMLLinkElement | null;
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        document.head.appendChild(link);
+      }
+      link.type = "image/svg+xml";
+      link.href = faviconUrl;
+
+      let appleLink = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement | null;
+      if (!appleLink) {
+        appleLink = document.createElement("link");
+        appleLink.rel = "apple-touch-icon";
+        document.head.appendChild(appleLink);
+      }
+      appleLink.href = faviconUrl;
+    }
+  }, [isWpp, isTg]);
 
   if (status === "LOADING") {
     return (
@@ -1240,12 +1411,26 @@ export default function CallPage() {
             <span className={styles.ctrlBtnEndLabel}>Encerrar</span>
           </button>
 
-          {/* Microfone — toggle visual de mudo */}
-          <button className={styles.ctrlBtn} onClick={handleToggleMic} aria-label="Mudo">
-            <div className={`${styles.ctrlBtnCircle} ${micMuted ? styles.ctrlBtnActive : ""}`}>
+          {/* Microfone */}
+          <button 
+            className={styles.ctrlBtn} 
+            onClick={handleToggleMic} 
+            aria-label={micMuted ? "Ativar microfone" : "Silenciar microfone"}
+          >
+            <div className={`${styles.ctrlBtnCircle} ${
+              callData?.callCenter?.enableAudioEcho
+                ? (micActive 
+                    ? (isWppActive ? styles.waCameraActive : isTgActive ? styles.tgCameraActive : styles.defaultCameraActive)
+                    : "")
+                : (micMuted ? styles.ctrlBtnActive : "")
+            }`}>
               {micMuted ? <IconMicMuted /> : <IconMic />}
             </div>
-            <span className={styles.ctrlBtnLabel}>{micMuted ? "Microfone" : "Mudo"}</span>
+            <span className={styles.ctrlBtnLabel}>
+              {callData?.callCenter?.enableAudioEcho
+                ? (micActive ? "Microfone" : "Mudo")
+                : (micMuted ? "Microfone" : "Mudo")}
+            </span>
           </button>
 
           {/* Compartilhar tela — mostra toast de erro */}

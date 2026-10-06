@@ -41,6 +41,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ toke
         kwaiPixelId: call.callCenter.kwaiPixelId,
         kwaiEvents: call.callCenter.kwaiEvents,
         template: (call.callCenter as any).template || "DEFAULT",
+        enableAudioEcho: (call.callCenter as any).enableAudioEcho ?? false,
       },
       media: {
         url: call.callCenter.media.url,

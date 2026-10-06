@@ -27,6 +27,7 @@ model CallCenter {
   allowRetryIfNotCompleted Boolean  @default(false)
   requireEndCallConfirmation Boolean @default(true)
   template                 String   @default("DEFAULT") // DEFAULT, WHATSAPP, TELEGRAM
+  enableAudioEcho          Boolean  @default(false)
   createdAt                DateTime @default(now())
   
   pixelId                  String?

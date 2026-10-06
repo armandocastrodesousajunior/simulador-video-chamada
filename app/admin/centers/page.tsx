@@ -21,6 +21,7 @@ export default function CentersPage() {
   const [allowRetryIfNotCompleted, setAllowRetryIfNotCompleted] = useState(false);
   const [requireEndCallConfirmation, setRequireEndCallConfirmation] = useState(true);
   const [template, setTemplate] = useState<"DEFAULT" | "WHATSAPP" | "TELEGRAM">("DEFAULT");
+  const [enableAudioEcho, setEnableAudioEcho] = useState(false);
   
   const [pixelId, setPixelId] = useState("");
   const [pixelEvents, setPixelEvents] = useState<Record<string, string>>({
@@ -67,6 +68,7 @@ export default function CentersPage() {
       setAllowRetryIfNotCompleted(center.allowRetryIfNotCompleted);
       setRequireEndCallConfirmation(center.requireEndCallConfirmation ?? true);
       setTemplate(center.template || "DEFAULT");
+      setEnableAudioEcho(center.enableAudioEcho ?? false);
       setPixelId(center.pixelId || "");
       setTikTokPixelId(center.tikTokPixelId || "");
       setGooglePixelId(center.googlePixelId || "");
@@ -105,6 +107,7 @@ export default function CentersPage() {
       setAllowRetryIfNotCompleted(false);
       setRequireEndCallConfirmation(true);
       setTemplate("DEFAULT");
+      setEnableAudioEcho(false);
       setPixelId("");
       setPixelEvents({ CREATED: "", ACCESSED: "", STARTED: "", COMPLETED: "", REJECTED: "", ABANDONED: "" });
       setTikTokPixelId("");
@@ -142,6 +145,7 @@ export default function CentersPage() {
       allowRetryIfNotCompleted,
       requireEndCallConfirmation,
       template,
+      enableAudioEcho,
       pixelId,
       pixelEvents: JSON.stringify(pixelEvents),
       tikTokPixelId,
@@ -460,6 +464,26 @@ export default function CentersPage() {
                     />
                     Requerer confirmação ao desligar (Modal de 3s)
                   </label>
+
+                  <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: '0.5rem 0' }} />
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
+                      <input 
+                        type="checkbox" 
+                        checked={enableAudioEcho} 
+                        onChange={e => setEnableAudioEcho(e.target.checked)} 
+                        style={{ width: 18, height: 18, accentColor: 'var(--primary)' }}
+                      />
+                      Ativar mecanismo de eco no microfone
+                      <span style={{ fontSize: '0.68rem', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '1px 6px', borderRadius: '10px', fontWeight: 700 }}>
+                        Client-Side (Leve)
+                      </span>
+                    </label>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '1.65rem' }}>
+                      Quando o participante ativar o microfone na chamada, simula um retorno/eco natural da própria voz refletida na chamada (processado 100% no navegador sem pesar o servidor).
+                    </span>
+                  </div>
                 </div>
 
                 {/* Seção Rastreamento (Accordions) */}
