@@ -202,6 +202,8 @@ export default function CallPage() {
   // Estados e Refs do Microfone e Mecanismo de Eco (Client-Side)
   const micStreamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const echoMasterGainRef = useRef<GainNode | null>(null);
+  const speakerMutedRef = useRef(false);
   const [micActive, setMicActive] = useState(false);
   const [micLoading, setMicLoading] = useState(false);
 
@@ -366,10 +368,14 @@ export default function CallPage() {
       });
   }, [token]);
 
-  // Sincroniza callActive com ref para acesso seguro em event listeners
+  // Sincroniza callActive e speakerMuted com refs para acesso seguro em event listeners e callbacks
   useEffect(() => {
     callActiveRef.current = callActive;
   }, [callActive]);
+
+  useEffect(() => {
+    speakerMutedRef.current = speakerMuted;
+  }, [speakerMuted]);
 
   // Função para obter tempo assistido preciso do vídeo
   const getExactWatchTime = useCallback(() => {
@@ -782,6 +788,7 @@ export default function CallPage() {
       } catch {}
       audioContextRef.current = null;
     }
+    echoMasterGainRef.current = null;
     setMicActive(false);
     setMicMuted(true);
   }, []);
@@ -849,6 +856,11 @@ export default function CallPage() {
       compressor.attack.value = 0.003;
       compressor.release.value = 0.25;
 
+      // 7. Master Gain para controle integrado com o botão de alto-falante/silenciar
+      const masterGain = ctx.createGain();
+      masterGain.gain.value = speakerMutedRef.current ? 0 : 1;
+      echoMasterGainRef.current = masterGain;
+
       // Conexões do Grafo de Áudio:
       source.connect(highPass);
       highPass.connect(lowPass);
@@ -859,7 +871,8 @@ export default function CallPage() {
 
       delay.connect(echoGain);
       echoGain.connect(compressor);
-      compressor.connect(ctx.destination);
+      compressor.connect(masterGain);
+      masterGain.connect(ctx.destination);
 
       setMicActive(true);
       setMicMuted(false);
@@ -943,7 +956,25 @@ export default function CallPage() {
   const handleToggleSpeaker = useCallback(() => {
     setSpeakerMuted(prev => {
       const next = !prev;
-      if (videoRef.current) videoRef.current.muted = next;
+      speakerMutedRef.current = next;
+
+      // Silencia ou restaura o áudio do vídeo
+      if (videoRef.current) {
+        videoRef.current.muted = next;
+      }
+
+      // Silencia ou restaura o som do eco caso esteja ativo
+      if (echoMasterGainRef.current && audioContextRef.current) {
+        try {
+          const currentTime = audioContextRef.current.currentTime;
+          echoMasterGainRef.current.gain.cancelScheduledValues(currentTime);
+          echoMasterGainRef.current.gain.setValueAtTime(echoMasterGainRef.current.gain.value, currentTime);
+          echoMasterGainRef.current.gain.linearRampToValueAtTime(next ? 0 : 1, currentTime + 0.05);
+        } catch (e) {
+          echoMasterGainRef.current.gain.value = next ? 0 : 1;
+        }
+      }
+
       return next;
     });
   }, []);
