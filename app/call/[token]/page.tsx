@@ -567,8 +567,8 @@ export default function CallPage() {
   // ── Dimensões & Posicionamento da Miniatura (PiP) ────────
   const getPipBounds = useCallback(() => {
     const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
-    const pipW = isMobile ? 96 : 114;
-    const pipH = isMobile ? 140 : 165;
+    const pipW = isMobile ? 101 : 120;
+    const pipH = isMobile ? 147 : 174;
     const minX = 12;
     const maxX = Math.max(minX, (typeof window !== "undefined" ? window.innerWidth : 400) - pipW - 12);
     const minY = 65;
