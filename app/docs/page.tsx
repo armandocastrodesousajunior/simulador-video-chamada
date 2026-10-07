@@ -357,7 +357,7 @@ function RouteCard({ route, baseUrl }: { route: typeof ROUTES[number]; baseUrl: 
   const buildCurl = () => {
     const url = `${baseUrl}${route.path.replace("[token]", "{TOKEN}")}`;
     let curl = `curl -X ${route.method} "${url}"`;
-    if (route.auth) curl += ` \\\n  -H "Authorization: Basic {BASE64_CREDENTIALS}"`;
+    if (route.auth) curl += ` \\\n  -H "x-api-key: {ACCESS_TOKEN}"`;
     if (route.body && !route.body.startsWith("#")) {
       curl += ` \\\n  -H "Content-Type: application/json" \\\n  -d '${route.body.split("\n")[0] === "{" ? route.body : ""}'`;
     }
@@ -448,6 +448,7 @@ export default function DocsPage() {
 
   const navItems = [
     { id: "overview", label: "Visão Geral" },
+    { id: "authentication", label: "Autenticação (API Key)" },
     { id: "statuses", label: "Estados da Chamada" },
     { id: "api-reference", label: "API Reference" },
     { id: "webhooks", label: "Webhooks" },
@@ -606,6 +607,141 @@ export default function DocsPage() {
             </section>
           )}
 
+          {/* AUTHENTICATION */}
+          {activeSection === "authentication" && (
+            <section>
+              <h1 style={{ fontSize: "1.8rem", fontWeight: 700, color: "#fff", margin: "0 0 8px" }}>
+                Autenticação via API Key
+              </h1>
+              <p style={{ color: "#7b8fa3", fontSize: "0.95rem", lineHeight: 1.7, margin: "0 0 24px" }}>
+                Todas as rotas protegidas da API utilizam autenticação por <strong>API Key (Access Token)</strong>.
+                A chave de acesso é configurada na variável de ambiente <code style={{ color: "#4a80ff" }}>ACCESS_TOKEN</code> no arquivo <code style={{ color: "#4a80ff" }}>.env</code> do seu servidor.
+              </p>
+
+              <div style={{
+                background: "rgba(74,128,255,0.08)", border: "1px solid rgba(74,128,255,0.25)",
+                borderRadius: 12, padding: "18px 22px", marginBottom: 32,
+              }}>
+                <h3 style={{ color: "#4a80ff", fontSize: "1rem", margin: "0 0 8px", display: "flex", alignItems: "center", gap: 8 }}>
+                  <span>🔑</span> Configuração no Arquivo .env
+                </h3>
+                <p style={{ color: "#c9d1d9", fontSize: "0.85rem", margin: "0 0 12px", lineHeight: 1.6 }}>
+                  Defina o seu token secreto no arquivo <code>.env</code> na raiz do projeto:
+                </p>
+                <CodeBlock code={`ACCESS_TOKEN="seu_token_secreto_aqui"`} lang="bash" />
+              </div>
+
+              <h2 style={{ color: "#fff", fontSize: "1.2rem", fontWeight: 600, marginBottom: 16 }}>
+                Como Enviar a API Key nas Requisições
+              </h2>
+              <p style={{ color: "#7b8fa3", fontSize: "0.9rem", lineHeight: 1.6, marginBottom: 20 }}>
+                O sistema suporta múltiplas formas de envio para facilitar integrações com ferramentas no-code (Make, Zapier, n8n), CRMs ou backends customizados:
+              </p>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 32 }}>
+                <div style={{
+                  background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 12, padding: "18px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <span style={{ background: "rgba(34,197,94,0.15)", color: "#22c55e", padding: "2px 8px", borderRadius: 6, fontSize: "0.72rem", fontWeight: 700 }}>RECOMENDADO</span>
+                    <strong style={{ color: "#fff", fontSize: "0.95rem" }}>Header x-api-key</strong>
+                  </div>
+                  <p style={{ color: "#7b8fa3", fontSize: "0.82rem", margin: "0 0 10px", lineHeight: 1.5 }}>
+                    Padrão de mercado para chaves de API REST.
+                  </p>
+                  <CodeBlock code={`x-api-key: seu_token_secreto_aqui`} lang="http" />
+                </div>
+
+                <div style={{
+                  background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 12, padding: "18px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <span style={{ background: "rgba(74,128,255,0.15)", color: "#4a80ff", padding: "2px 8px", borderRadius: 6, fontSize: "0.72rem", fontWeight: 700 }}>PADRÃO HTTP</span>
+                    <strong style={{ color: "#fff", fontSize: "0.95rem" }}>Header Authorization</strong>
+                  </div>
+                  <p style={{ color: "#7b8fa3", fontSize: "0.82rem", margin: "0 0 10px", lineHeight: 1.5 }}>
+                    Formato Authorization Bearer convencional.
+                  </p>
+                  <CodeBlock code={`Authorization: Bearer seu_token_secreto_aqui`} lang="http" />
+                </div>
+
+                <div style={{
+                  background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 12, padding: "18px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <span style={{ background: "rgba(234,179,8,0.15)", color: "#eab308", padding: "2px 8px", borderRadius: 6, fontSize: "0.72rem", fontWeight: 700 }}>URL PARAM</span>
+                    <strong style={{ color: "#fff", fontSize: "0.95rem" }}>Query String</strong>
+                  </div>
+                  <p style={{ color: "#7b8fa3", fontSize: "0.82rem", margin: "0 0 10px", lineHeight: 1.5 }}>
+                    Útil para chamadas de teste e webhooks simples.
+                  </p>
+                  <CodeBlock code={`?apiKey=seu_token_secreto_aqui`} lang="http" />
+                </div>
+              </div>
+
+              <h2 style={{ color: "#fff", fontSize: "1.2rem", fontWeight: 600, marginBottom: 16 }}>
+                Exemplos Práticos de Código
+              </h2>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 32 }}>
+                <div>
+                  <p style={{ color: "#c9d1d9", fontSize: "0.85rem", fontWeight: 600, margin: "0 0 8px" }}>1. cURL (Bash / Terminal)</p>
+                  <CodeBlock code={`curl -X POST "${baseUrl || "http://localhost:2376"}/api/admin/calls" \\
+  -H "x-api-key: SEU_ACCESS_TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{"callCenterId": "UUID_DA_CENTRAL", "externalId": "lead_123"}'`} lang="bash" />
+                </div>
+
+                <div>
+                  <p style={{ color: "#c9d1d9", fontSize: "0.85rem", fontWeight: 600, margin: "0 0 8px" }}>2. JavaScript / Node.js (Fetch API)</p>
+                  <CodeBlock code={`const res = await fetch("${baseUrl || "http://localhost:2376"}/api/admin/calls", {
+  method: "POST",
+  headers: {
+    "x-api-key": process.env.ACCESS_TOKEN,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    callCenterId: "UUID_DA_CENTRAL",
+    externalId: "lead_123"
+  })
+});
+
+const data = await res.json();
+console.log("Chamada criada com sucesso:", data);`} lang="javascript" />
+                </div>
+
+                <div>
+                  <p style={{ color: "#c9d1d9", fontSize: "0.85rem", fontWeight: 600, margin: "0 0 8px" }}>3. Python (Requests)</p>
+                  <CodeBlock code={`import requests
+
+url = "${baseUrl || "http://localhost:2376"}/api/admin/calls"
+headers = {
+    "x-api-key": "SEU_ACCESS_TOKEN",
+    "Content-Type": "application/json"
+}
+payload = {
+    "callCenterId": "UUID_DA_CENTRAL",
+    "externalId": "lead_123"
+}
+
+response = requests.post(url, json=payload, headers=headers)
+print(response.json())`} lang="python" />
+                </div>
+              </div>
+
+              <h2 style={{ color: "#fff", fontSize: "1.2rem", fontWeight: 600, marginBottom: 12 }}>
+                Tratamento de Erros (401 Unauthorized)
+              </h2>
+              <p style={{ color: "#7b8fa3", fontSize: "0.9rem", lineHeight: 1.6, margin: "0 0 12px" }}>
+                Se o token não for enviado ou estiver incorreto, a API responderá com status HTTP <code>401</code>:
+              </p>
+              <CodeBlock code={`{\n  "error": "Unauthorized",\n  "message": "API Key inválida ou ausente. Forneça o header 'x-api-key' ou 'Authorization: Bearer [ACCESS_TOKEN]'."\n}`} />
+            </section>
+          )}
+
           {/* STATUSES */}
           {activeSection === "statuses" && (
             <section>
@@ -650,13 +786,14 @@ export default function DocsPage() {
                 Clique em cada rota para expandir os detalhes, exemplos de request/response e o cURL pronto para copiar.
               </p>
               <div style={{
-                background: "rgba(234,179,8,0.08)", border: "1px solid rgba(234,179,8,0.2)",
-                borderRadius: 8, padding: "10px 16px", marginBottom: 28,
-                display: "flex", alignItems: "center", gap: 10,
+                background: "rgba(74,128,255,0.08)", border: "1px solid rgba(74,128,255,0.25)",
+                borderRadius: 10, padding: "14px 18px", marginBottom: 28,
+                display: "flex", alignItems: "center", gap: 12,
               }}>
-                <span>🔒</span>
-                <span style={{ color: "#eab308", fontSize: "0.84rem" }}>
-                  Rotas marcadas com <strong>Auth</strong> requerem credenciais de administrador (Basic Auth ou sessão autenticada).
+                <span style={{ fontSize: "1.2rem" }}>🔑</span>
+                <span style={{ color: "#c9d1d9", fontSize: "0.85rem", lineHeight: 1.6 }}>
+                  Rotas com o selo <strong style={{ color: "#4a80ff" }}>🔒 Auth</strong> exigem autenticação via <strong>API Key</strong>.
+                  Envie o token definido no seu <code style={{ color: "#4a80ff" }}>.env</code> (<code style={{ color: "#4a80ff" }}>ACCESS_TOKEN</code>) através do cabeçalho <code style={{ color: "#4a80ff" }}>x-api-key: [ACCESS_TOKEN]</code> ou <code style={{ color: "#4a80ff" }}>Authorization: Bearer [ACCESS_TOKEN]</code>.
                 </span>
               </div>
 
@@ -752,11 +889,11 @@ export default function DocsPage() {
               </div>
 
               <h2 style={{ color: "#fff", fontWeight: 600, fontSize: "1rem", marginBottom: 12 }}>Autenticação e Configurações</h2>
-              <p style={{ color: "#7b8fa3", fontSize: "0.9rem", marginBottom: 20 }}>
+              <p style={{ color: "#7b8fa3", fontSize: "0.9rem", marginBottom: 16 }}>
                 Acesse a aba <strong>Servidor MCP</strong> no Painel Admin para ligar/desligar o servidor e escolher se ele exige autenticação.
-                Se a autenticação estiver ativada (padrão), o cliente MCP deverá enviar:
+                Se a autenticação estiver ativada (padrão), o cliente MCP deverá enviar o seu <code style={{ color: "#4a80ff" }}>ACCESS_TOKEN</code> como API Key:
               </p>
-              <CodeBlock code="Authorization: Bearer [SEU_ADMIN_TOKEN]" lang="http" />
+              <CodeBlock code={`# Header Recomendado (API Key):\nx-api-key: [SEU_ACCESS_TOKEN]\n\n# Ou via Authorization Bearer:\nAuthorization: Bearer [SEU_ACCESS_TOKEN]`} lang="http" />
 
               <h2 style={{ color: "#fff", fontWeight: 600, fontSize: "1rem", marginBottom: 12, marginTop: 32 }}>Ferramentas Expostas (Tools)</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

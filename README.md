@@ -85,6 +85,6 @@ Se você precisa consultar as informações da simulação antes, durante ou dep
 
 ## 🛠️ Tecnologias e Configuração
 - Next.js 16.2.9 (App Router)
-- Prisma (SQLite)
+- Prisma (PostgreSQL)
 - Servidor dev padrão: `http://localhost:2376` (porta customizada no package.json).
-- O painel administrativo é acessado em `/admin` (protegido por Basic Auth/Middleware, dependendo da configuração no `middleware.ts`).
+- As rotas de API e painel administrativo utilizam autenticação via **API Key (Access Token)** definido no `.env` (variável `ACCESS_TOKEN`). Para chamadas HTTP à API, envie o cabeçalho `x-api-key: SEU_ACCESS_TOKEN` ou `Authorization: Bearer SEU_ACCESS_TOKEN`.

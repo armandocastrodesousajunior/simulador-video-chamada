@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { mcpServer } from "@/lib/mcp/server";
 import { createTransport, getTransport } from "@/lib/mcp/transport";
 import { prisma } from "@/lib/prisma";
+import { validateApiAuth } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   // Check settings
@@ -16,14 +17,11 @@ export async function GET(req: NextRequest) {
 
   // Auth check if enabled
   if (settings.requireAuth) {
-    const adminToken = process.env.ADMIN_TOKEN;
-    const cookieAuth = req.cookies.get('admin_token')?.value;
-    const authHeader = req.headers.get('authorization');
-    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
-    const isAuthorized = (cookieAuth === adminToken) || (bearerToken === adminToken);
-
-    if (!isAuthorized || !adminToken) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!validateApiAuth(req)) {
+      return NextResponse.json({ 
+        error: "Unauthorized", 
+        message: "API Key inválida ou ausente. Forneça o header 'x-api-key' ou 'Authorization: Bearer [ACCESS_TOKEN]'." 
+      }, { status: 401 });
     }
   }
 
